@@ -1,0 +1,92 @@
+# VaniAI CD — on every v* tag, build both images, push them to GitHub
+# Container Registry, then hand off to the (placeholder) deploy step.
+name: CD
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push:
+    name: Build & push ${{ matrix.service }} image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service: [backend, frontend]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Produces lowercase image names + tags: vX.Y.Z, X.Y and latest.
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.service }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.service }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+  deploy:
+    name: Deploy (documented placeholder)
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      # ---------------------------------------------------------------------
+      # PLACEHOLDER DEPLOY STEP
+      #
+      # This project has no managed production host wired in yet, so this step
+      # only documents the intended rollout. To enable a real deployment:
+      #
+      #   1. Add repository secrets: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY.
+      #   2. Replace this step with an SSH action (e.g. appleboy/ssh-action)
+      #      that runs on the host, where /opt/vaniai contains this repo's
+      #      docker-compose.yml with the `build:` blocks swapped for the
+      #      published GHCR `image:` references:
+      #
+      #        cd /opt/vaniai
+      #        echo "$GHCR_TOKEN" | docker login ghcr.io -u <user> --password-stdin
+      #        docker compose pull backend frontend
+      #        docker compose up -d
+      #        docker image prune -f
+      #
+      #   3. Backend migrations run automatically on container start
+      #      (`alembic upgrade head` in the compose command), so no extra
+      #      migration step is required.
+      # ---------------------------------------------------------------------
+      - name: Describe rollout (no-op)
+        run: |
+          echo "Images published for tag ${GITHUB_REF_NAME}:"
+          echo "  ghcr.io/${GITHUB_REPOSITORY,,}-backend:${GITHUB_REF_NAME#v}"
+          echo "  ghcr.io/${GITHUB_REPOSITORY,,}-frontend:${GITHUB_REF_NAME#v}"
+          echo ""
+          echo "Deploy target not configured — see the comments in"
+          echo ".github/workflows/cd.yml for how to wire a real host."

@@ -1,0 +1,17 @@
+# VaniAI Grafana dashboard provisioning.
+# Loads every dashboard JSON from /var/lib/grafana/dashboards, which
+# docker-compose.yml bind-mounts from ./mlops/grafana/dashboards.
+
+apiVersion: 1
+
+providers:
+  - name: vaniai
+    orgId: 1
+    folder: VaniAI
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

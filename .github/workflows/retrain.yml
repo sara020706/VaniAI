@@ -1,0 +1,83 @@
+# VaniAI scheduled retraining — rebuilds the model inside the backend image
+# every week (and on demand) and publishes the resulting artifacts.
+name: Scheduled Retraining
+
+on:
+  schedule:
+    # Every Sunday at 02:00 UTC.
+    - cron: "0 2 * * 0"
+  workflow_dispatch:
+    inputs:
+      rows:
+        description: "Rows for the synthetic training dataset"
+        required: false
+        default: "2000"
+
+jobs:
+  retrain:
+    name: Retrain placement model
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build backend image (training context)
+        run: docker build -t vaniai-backend:retrain backend
+
+      - name: Prepare workspace
+        run: mkdir -p retrain/data retrain/ml_artifacts
+
+      # -------------------------------------------------------------------
+      # DATA SOURCE PLACEHOLDER: in a real deployment this step would fetch
+      # the latest validated dataset instead (e.g. `dvc pull` from remote
+      # storage, or an export from the /api/v1/admin/datasets service).
+      # The synthetic generator keeps the pipeline runnable end-to-end.
+      # -------------------------------------------------------------------
+      - name: Generate training dataset
+        run: |
+          docker run --rm -u root \
+            -v "${{ github.workspace }}/retrain/data:/app/data" \
+            vaniai-backend:retrain \
+            python -m ml.data.generate_dataset \
+              --rows "${{ github.event.inputs.rows || '2000' }}" \
+              --out data/sample_students.csv
+
+      # MLFLOW_TRACKING_URI is intentionally empty: training logs to a local
+      # ./mlruns directory inside the container and never needs a live server.
+      - name: Train and register model
+        run: |
+          docker run --rm -u root \
+            -e MLFLOW_TRACKING_URI= \
+            -e DATABASE_URL=sqlite:////tmp/retrain.db \
+            -v "${{ github.workspace }}/retrain/data:/app/data" \
+            -v "${{ github.workspace }}/retrain/ml_artifacts:/app/ml_artifacts" \
+            vaniai-backend:retrain \
+            python -m ml.training.train --dataset data/sample_students.csv
+
+      - name: Upload model artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ml-artifacts-run-${{ github.run_number }}
+          path: retrain/ml_artifacts
+          retention-days: 30
+          if-no-files-found: error
+
+      # -------------------------------------------------------------------
+      # DEPLOY TARGET PLACEHOLDER
+      #
+      # There is no production model store configured for this repository.
+      # When real infrastructure exists, replace this step with one of:
+      #   * push ml_artifacts to remote storage (S3/GCS) tracked by DVC, or
+      #   * upload the model to a remote MLflow registry
+      #     (set MLFLOW_TRACKING_URI to the server URL in the training step), or
+      #   * sync ml_artifacts to the production host's `ml_artifacts` volume
+      #     and call POST /api/v1/admin/models/{version}/deploy so the running
+      #     backend hot-reloads the predictor.
+      # -------------------------------------------------------------------
+      - name: Publish model to deploy target (no-op)
+        run: |
+          echo "New model trained. Contents of ml_artifacts:"
+          find retrain/ml_artifacts -maxdepth 3 -type f | sort
+          echo ""
+          echo "Deploy target not configured — see the comments in"
+          echo ".github/workflows/retrain.yml for the intended publish options."

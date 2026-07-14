@@ -1,0 +1,30 @@
+# VaniAI Prometheus configuration (docs/CONTRACTS.md section 9).
+#
+# Scrapes the FastAPI backend's prometheus-fastapi-instrumentator endpoint
+# (custom metrics: vaniai_predictions_total, vaniai_prediction_probability,
+# vaniai_active_model_info, vaniai_drift_share) plus Prometheus itself.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+scrape_configs:
+  # FastAPI backend — service name from docker-compose.yml.
+  - job_name: vaniai-backend
+    metrics_path: /metrics
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - backend:8000
+        labels:
+          service: vaniai-backend
+          environment: production
+
+  # Prometheus self-monitoring.
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - localhost:9090
+        labels:
+          service: prometheus

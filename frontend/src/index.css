@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 20% 99%;
+    --foreground: 224 71.4% 4.1%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 71.4% 4.1%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71.4% 4.1%;
+    --primary: 262 83% 58%;
+    --primary-foreground: 210 20% 98%;
+    --secondary: 220 14.3% 95.9%;
+    --secondary-foreground: 220.9 39.3% 11%;
+    --muted: 220 14.3% 95.9%;
+    --muted-foreground: 220 8.9% 46.1%;
+    --accent: 250 60% 96%;
+    --accent-foreground: 220.9 39.3% 11%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 20% 98%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 262 83% 58%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 224 47% 6%;
+    --foreground: 210 20% 98%;
+    --card: 224 44% 8%;
+    --card-foreground: 210 20% 98%;
+    --popover: 224 44% 8%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 262 83% 66%;
+    --primary-foreground: 210 20% 98%;
+    --secondary: 215 27.9% 16.9%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 215 27.9% 16.9%;
+    --muted-foreground: 217.9 10.6% 64.9%;
+    --accent: 216 34% 17%;
+    --accent-foreground: 210 20% 98%;
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 210 20% 98%;
+    --border: 215 27.9% 16.9%;
+    --input: 215 27.9% 16.9%;
+    --ring: 262 83% 66%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-muted-foreground/25;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
+  }
+}
+
+@layer components {
+  /* Brand gradient — headings / buttons / accents */
+  .gradient-primary {
+    @apply bg-gradient-to-r from-violet-600 to-blue-600;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent;
+  }
+
+  .dark .gradient-text {
+    @apply from-violet-400 to-blue-400;
+  }
+
+  /* Glassmorphism card */
+  .glass-card {
+    @apply bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl shadow-lg;
+  }
+
+  /* Animated gradient backdrop for auth screens */
+  .auth-gradient {
+    background: linear-gradient(
+      130deg,
+      #4c1d95 0%,
+      #6d28d9 25%,
+      #2563eb 50%,
+      #7c3aed 75%,
+      #4c1d95 100%
+    );
+    background-size: 300% 300%;
+    animation: gradient-pan 14s ease infinite;
+  }
+}

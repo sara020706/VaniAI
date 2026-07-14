@@ -1,0 +1,10 @@
+# Flat training hyperparameters (CONTRACTS.md §6.2 / §9).
+# Read by ml/config.py::load_params via a tiny hand parser — NO PyYAML
+# dependency, so keep every key flat (top-level "key: value", no nesting).
+test_size: 0.2
+random_state: 42
+rf_n_estimators: 300
+xgb_n_estimators: 300
+xgb_max_depth: 5
+xgb_learning_rate: 0.1
+logreg_max_iter: 1000

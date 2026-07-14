@@ -1,0 +1,52 @@
+# Root-level .dockerignore.
+#
+# NOTE: Docker only applies the .dockerignore located at the ROOT OF THE BUILD
+# CONTEXT. docker-compose.yml builds ./backend and ./frontend as separate
+# contexts, and both Dockerfiles COPY an explicit whitelist of paths, so the
+# images stay clean regardless. This file covers any build that uses the
+# repository root as its context and documents what must never reach an image.
+
+# VCS / CI / docs / infra — never needed inside an image
+.git
+.github
+.gitignore
+.dockerignore
+docs
+mlops
+data
+dvc.yaml
+params.yaml
+README.md
+Makefile
+docker-compose.yml
+
+# Python caches / venvs
+**/__pycache__
+**/*.py[cod]
+**/.venv
+**/venv
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+
+# Runtime state and ML artifacts (mounted as volumes, never baked in)
+backend/ml_artifacts
+backend/uploads
+backend/mlruns
+mlruns
+mlartifacts
+**/test.db
+**/*.sqlite3
+
+# Node
+**/node_modules
+frontend/dist
+
+# Environment files and secrets (examples are not COPY'd anyway)
+**/.env
+**/.env.*
+
+# OS junk
+**/.DS_Store
+**/Thumbs.db
+**/desktop.ini

@@ -1,0 +1,78 @@
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# ---------------------------------------------------------------------------
+# Node / frontend
+# ---------------------------------------------------------------------------
+node_modules/
+dist/
+dist-ssr/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*
+
+# ---------------------------------------------------------------------------
+# Environment files (keep the committed examples)
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# ---------------------------------------------------------------------------
+# ML artifacts, experiment tracking and uploads (runtime state, never committed)
+# ---------------------------------------------------------------------------
+backend/ml_artifacts/
+backend/uploads/
+mlruns/
+backend/mlruns/
+mlartifacts/
+
+# Local/test databases
+test.db
+*.sqlite3
+
+# ---------------------------------------------------------------------------
+# DVC — data/ is DVC-managed; keep only the sample dataset and the placeholder
+# ---------------------------------------------------------------------------
+/data/*
+!/data/.gitkeep
+!/data/sample_students.csv
+/.dvc/cache/
+/.dvc/tmp/
+
+# ---------------------------------------------------------------------------
+# Docker volumes / local bind-mount data (compose uses named volumes, but
+# ignore common local mount dirs defensively)
+# ---------------------------------------------------------------------------
+pgdata/
+postgres-data/
+grafana-data/
+prometheus-data/
+
+# ---------------------------------------------------------------------------
+# OS junk
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------------------------------------------------------------------------
+# Editors / IDEs
+# ---------------------------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo

@@ -1,0 +1,18 @@
+# VaniAI Grafana datasource provisioning.
+# Points Grafana at the Prometheus container from docker-compose.yml.
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: vaniai-prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      # Matches the scrape_interval in mlops/prometheus/prometheus.yml so
+      # $__rate_interval never drops below one scrape period.
+      timeInterval: 15s
+      httpMethod: POST

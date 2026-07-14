@@ -1,0 +1,45 @@
+# DVC pipeline (CONTRACTS.md §9). Stages run from the `backend/` directory so
+# that the standalone `ml` package is importable (`python -m ml.*`) and the
+# `../data` / `../params.yaml` relative paths line up with the module CLIs.
+#
+#   dvc repro                # run the whole pipeline
+#   dvc repro generate_data  # regenerate the synthetic dataset only
+#   dvc repro train          # retrain from the current dataset
+#
+# `train` reads flat hyperparameters from the repo-root params.yaml.
+stages:
+  generate_data:
+    wdir: backend
+    cmd: python -m ml.data.generate_dataset --rows 2000 --out ../data/sample_students.csv --seed 42
+    deps:
+      - ml/data/generate_dataset.py
+      - ml/features/engineering.py
+    outs:
+      - ../data/sample_students.csv
+
+  train:
+    wdir: backend
+    cmd: python -m ml.training.train --dataset ../data/sample_students.csv --model-dir ml_artifacts
+    deps:
+      - ../data/sample_students.csv
+      - ml/config.py
+      - ml/features/engineering.py
+      - ml/data/validation.py
+      - ml/data/cleaning.py
+      - ml/training/train.py
+      - ml/training/evaluate.py
+      - ml/training/registry.py
+    params:
+      - ../params.yaml:
+          - test_size
+          - random_state
+          - rf_n_estimators
+          - xgb_n_estimators
+          - xgb_max_depth
+          - xgb_learning_rate
+          - logreg_max_iter
+    outs:
+      - ml_artifacts
+    metrics:
+      - ml_artifacts/active/metadata.json:
+          cache: false
