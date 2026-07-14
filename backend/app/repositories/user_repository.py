@@ -102,8 +102,19 @@ class UserRepository(BaseRepository[User]):
         return token
 
     def get_refresh_token(self, token_hash: str) -> RefreshToken | None:
-        """Look up a stored refresh token by its sha256 hash."""
-        stmt = select(RefreshToken).where(RefreshToken.token_hash == token_hash).limit(1)
+        """Look up a stored refresh token by its sha256 hash.
+
+        Two JWTs minted in the same second with identical claims are byte-equal
+        and therefore share a hash. Order non-revoked rows first (then newest),
+        so a rapid refresh chain always resolves to the live token rather than a
+        previously-revoked collision.
+        """
+        stmt = (
+            select(RefreshToken)
+            .where(RefreshToken.token_hash == token_hash)
+            .order_by(RefreshToken.revoked.asc(), RefreshToken.id.desc())
+            .limit(1)
+        )
         return self.session.execute(stmt).scalar_one_or_none()
 
     def revoke_refresh_token(self, token: RefreshToken) -> None:

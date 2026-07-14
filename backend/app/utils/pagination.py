@@ -7,14 +7,11 @@ Query params ``?page=1&page_size=20``.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TypeVar
 
 from app.schemas.common import Page
 
-T = TypeVar("T")
 
-
-def paginate(items: Sequence[T], total: int, page: int, page_size: int) -> Page[T]:
+def paginate[T](items: Sequence[T], total: int, page: int, page_size: int) -> Page[T]:
     """Wrap an already-sliced page of ``items`` into the standard envelope.
 
     ``items`` must be the rows for the requested page (already offset/limited);

@@ -8,17 +8,15 @@ CRUD primitives shared by :class:`UserRepository` and :class:`StudentRepository`
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Generic, TypeVar
+from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.database import Base
 
-ModelT = TypeVar("ModelT", bound=Base)
 
-
-class BaseRepository(Generic[ModelT]):
+class BaseRepository[ModelT: Base]:
     """Thin, typed wrapper over common ORM operations for a single model."""
 
     def __init__(self, session: Session, model: type[ModelT]) -> None:

@@ -443,7 +443,7 @@ interface CrudListProps<TItem extends { id: number }, TValues, TPayload> {
   icon: LucideIcon;
   items: TItem[];
   fields: CrudFieldSpec<TValues>[];
-  schema: z.ZodType<TValues>;
+  schema: z.ZodTypeAny;
   defaults: TValues;
   toPayload: (values: TValues) => TPayload;
   addFn: (payload: TPayload) => Promise<TItem>;
@@ -477,7 +477,7 @@ function CrudList<TItem extends { id: number }, TValues, TPayload>({
     reset,
     formState: { errors, isSubmitting },
   } = useForm<TValues>({
-    resolver: zodResolver(schema as z.ZodType<TValues>) as Resolver<TValues>,
+    resolver: zodResolver(schema) as Resolver<TValues>,
     defaultValues: defaults as never,
   });
 

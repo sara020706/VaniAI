@@ -7,7 +7,6 @@ import {
   SkillRadarChart,
   type SkillRadarDatum,
 } from "@/components/charts";
-import { useChartColors } from "@/lib/chart-colors";
 import {
   EmptyState,
   ErrorState,
@@ -19,6 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useChartColors } from "@/lib/chart-colors";
 import { facultyApi, studentApi } from "@/lib/api";
 import { cn, formatPercent, formatScore } from "@/lib/utils";
 import type { StudentCompareItem, StudentListItem } from "@/types";

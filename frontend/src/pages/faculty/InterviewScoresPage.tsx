@@ -13,9 +13,9 @@ import {
   GlassCard,
   LoadingState,
   PageHeader,
-  RiskBadge,
   ScoreRing,
 } from "@/components/shared";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +36,15 @@ import type {
 } from "@/types";
 
 const CONFIDENCE_LEVELS: ConfidenceLevel[] = ["low", "medium", "high"];
+
+const CONFIDENCE_VARIANT: Record<
+  ConfidenceLevel,
+  "success" | "warning" | "danger"
+> = {
+  high: "success",
+  medium: "warning",
+  low: "danger",
+};
 
 const interviewSchema = z.object({
   mock_interview_score: z
@@ -318,18 +327,16 @@ export default function FacultyInterviewScoresPage() {
                   <span className="text-sm text-muted-foreground">
                     Confidence
                   </span>
-                  <RiskBadge
-                    level={
-                      result.interview_readiness.confidence_level === "high"
-                        ? "low"
-                        : result.interview_readiness.confidence_level === "medium"
-                          ? "medium"
-                          : "high"
+                  <Badge
+                    variant={
+                      CONFIDENCE_VARIANT[
+                        result.interview_readiness.confidence_level
+                      ]
                     }
-                  />
-                  <span className="text-xs capitalize text-muted-foreground">
-                    ({result.interview_readiness.confidence_level})
-                  </span>
+                    className="capitalize"
+                  >
+                    {result.interview_readiness.confidence_level}
+                  </Badge>
                 </div>
                 {result.interview_readiness.suggestions.length > 0 ? (
                   <div>
