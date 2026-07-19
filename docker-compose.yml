@@ -85,14 +85,10 @@ services:
     # reliable option — no custom image required). --serve-artifacts with
     # --artifacts-destination proxies artifact up/downloads through the server,
     # so client containers never need access to this filesystem path.
-    command: >
-      bash -c "pip install --no-cache-dir psycopg2-binary==2.9.10 &&
-               mlflow server
-               --backend-store-uri postgresql://vaniai:vaniai@postgres:5432/mlflow
-               --serve-artifacts
-               --artifacts-destination /mlflow/artifacts
-               --host 0.0.0.0
-               --port 5000"
+    command:
+      - bash
+      - -c
+      - "pip install --no-cache-dir psycopg2-binary==2.9.10 && mlflow server --backend-store-uri postgresql://vaniai:vaniai@postgres:5432/mlflow --serve-artifacts --artifacts-destination /mlflow/artifacts --host 0.0.0.0 --port 5000"
     ports:
       - "5000:5000"
     volumes:

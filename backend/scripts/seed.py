@@ -294,7 +294,7 @@ def _generate_and_register_dataset(session: Session, uploaded_by: int) -> Datase
     datasets_dir.mkdir(parents=True, exist_ok=True)
     out_path = datasets_dir / "seed_dataset.csv"
 
-    generate(rows=DATASET_ROWS, out=str(out_path))
+    generate(rows=DATASET_ROWS, out_path=str(out_path))
 
     row_count = _count_csv_rows(out_path)
     dataset = Dataset(
