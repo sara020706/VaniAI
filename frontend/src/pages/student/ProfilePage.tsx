@@ -16,7 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-import { useForm, type Resolver } from "react-hook-form";
+import { useForm, type FieldValues, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -438,7 +438,7 @@ interface CrudFieldSpec<TValues> {
   optional?: boolean;
 }
 
-interface CrudListProps<TItem extends { id: number }, TValues, TPayload> {
+interface CrudListProps<TItem extends { id: number }, TValues extends FieldValues, TPayload> {
   title: string;
   icon: LucideIcon;
   items: TItem[];
@@ -453,7 +453,7 @@ interface CrudListProps<TItem extends { id: number }, TValues, TPayload> {
   singular: string;
 }
 
-function CrudList<TItem extends { id: number }, TValues, TPayload>({
+function CrudList<TItem extends { id: number }, TValues extends FieldValues, TPayload>({
   title,
   icon,
   items,

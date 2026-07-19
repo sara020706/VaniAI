@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { adminApi } from "@/lib/api";
+
 import {
   DataTable,
   ErrorState,

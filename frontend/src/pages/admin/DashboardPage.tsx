@@ -46,7 +46,7 @@ const listContainer = {
 };
 const listItem = {
   hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.24, ease: "easeOut" } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.24, ease: "easeOut" as const } },
 };
 
 /** Metric keys surfaced as headline StatCards for the active model. */
