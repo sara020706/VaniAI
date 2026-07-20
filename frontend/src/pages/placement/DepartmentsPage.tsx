@@ -1,6 +1,12 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { FileDown } from "lucide-react";
+import {
+  Building2,
+  FileDown,
+  ShieldAlert,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -14,6 +20,7 @@ import {
   GlassCard,
   LoadingState,
   PageHeader,
+  StatCard,
   type DataTableColumn,
 } from "@/components/shared";
 import { Button } from "@/components/ui/button";
@@ -46,6 +53,19 @@ const METRIC_VIEWS: Record<
       { key: "at_risk_count", name: "At Risk" },
     ],
   },
+};
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06, delayChildren: 0.04 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.25 } },
 };
 
 /**
@@ -82,6 +102,31 @@ export default function PlacementDepartmentsPage() {
       })),
     [query.data],
   );
+
+  // Cohort-level headline figures derived in-component (no extra API calls).
+  const summary = useMemo(() => {
+    const rows = query.data ?? [];
+    if (rows.length === 0) {
+      return {
+        departments: 0,
+        students: 0,
+        avgReadiness: 0,
+        atRisk: 0,
+      };
+    }
+    const students = rows.reduce((sum, row) => sum + row.student_count, 0);
+    const atRisk = rows.reduce((sum, row) => sum + row.at_risk_count, 0);
+    const weightedReadiness = rows.reduce(
+      (sum, row) => sum + row.average_readiness * row.student_count,
+      0,
+    );
+    return {
+      departments: rows.length,
+      students,
+      avgReadiness: students > 0 ? weightedReadiness / students : 0,
+      atRisk,
+    };
+  }, [query.data]);
 
   const columns: DataTableColumn<DepartmentAnalytics>[] = [
     { key: "department", header: "Department" },
@@ -125,6 +170,8 @@ export default function PlacementDepartmentsPage() {
         <Button
           variant="outline"
           size="sm"
+          className="rounded-xl"
+          aria-label={`Download PDF report for ${row.department}`}
           onClick={() => downloadReport.mutate(row.department)}
           disabled={
             downloadReport.isPending &&
@@ -139,7 +186,7 @@ export default function PlacementDepartmentsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title="Departments"
         description="Compare departments and download per-department placement reports."
@@ -151,47 +198,111 @@ export default function PlacementDepartmentsPage() {
         <ErrorState onRetry={() => void query.refetch()} />
       ) : query.data ? (
         <motion.div
-          className="space-y-6"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
+          className="space-y-8"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
         >
-          <GlassCard className="p-5">
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-sm font-semibold">Department Comparison</h2>
-                <p className="text-xs text-muted-foreground">
-                  {METRIC_VIEWS[view].label}
-                </p>
-              </div>
-              <Tabs
-                value={view}
-                onValueChange={(value) => setView(value as MetricView)}
-              >
-                <TabsList>
-                  <TabsTrigger value="readiness">Readiness</TabsTrigger>
-                  <TabsTrigger value="academics">Academics</TabsTrigger>
-                  <TabsTrigger value="placement">Placement</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-            <DepartmentComparisonChart
-              data={chartData}
-              metrics={METRIC_VIEWS[view].metrics}
-            />
-          </GlassCard>
-
-          <GlassCard className="p-5">
-            <h2 className="mb-3 text-sm font-semibold">Department Metrics</h2>
-            <div className="overflow-x-auto">
-              <DataTable
-                columns={columns}
-                data={query.data}
-                rowKey={(row) => row.department}
-                emptyMessage="No department data available"
+          <motion.div
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            variants={containerVariants}
+          >
+            <motion.div variants={itemVariants}>
+              <StatCard
+                title="Departments"
+                value={summary.departments}
+                icon={Building2}
+                description="Under comparison"
               />
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <StatCard
+                title="Total Students"
+                value={summary.students}
+                icon={Users}
+                description="Across all departments"
+              />
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <StatCard
+                title="Avg Readiness"
+                value={formatScore(summary.avgReadiness, 1)}
+                icon={TrendingUp}
+                gradient
+                description="Enrollment-weighted mean"
+              />
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <StatCard
+                title="At Risk"
+                value={summary.atRisk}
+                icon={ShieldAlert}
+                description="Students needing support"
+              />
+            </motion.div>
+          </motion.div>
+
+          <motion.section className="space-y-4" variants={containerVariants}>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Comparative analytics
+              </p>
+              <h2 className="text-lg font-bold tracking-tight">
+                How departments stack up
+              </h2>
             </div>
-          </GlassCard>
+            <motion.div variants={itemVariants} whileHover={{ y: -2 }}>
+              <GlassCard className="gradient-border p-6 transition-shadow hover:shadow-[var(--shadow-lg)]">
+                <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold">
+                      Department Comparison
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      {METRIC_VIEWS[view].label}
+                    </p>
+                  </div>
+                  <Tabs
+                    value={view}
+                    onValueChange={(value) => setView(value as MetricView)}
+                  >
+                    <TabsList>
+                      <TabsTrigger value="readiness">Readiness</TabsTrigger>
+                      <TabsTrigger value="academics">Academics</TabsTrigger>
+                      <TabsTrigger value="placement">Placement</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+                <DepartmentComparisonChart
+                  data={chartData}
+                  metrics={METRIC_VIEWS[view].metrics}
+                />
+              </GlassCard>
+            </motion.div>
+          </motion.section>
+
+          <motion.section className="space-y-4" variants={containerVariants}>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Full breakdown
+              </p>
+              <h2 className="text-lg font-bold tracking-tight">
+                Department Metrics
+              </h2>
+            </div>
+            <motion.div variants={itemVariants}>
+              <GlassCard className="p-6">
+                <div className="overflow-x-auto">
+                  <DataTable
+                    columns={columns}
+                    data={query.data}
+                    rowKey={(row) => row.department}
+                    emptyMessage="No department data available"
+                  />
+                </div>
+              </GlassCard>
+            </motion.div>
+          </motion.section>
         </motion.div>
       ) : null}
     </div>

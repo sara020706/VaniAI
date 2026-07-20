@@ -17,7 +17,6 @@ import { adminApi } from "@/lib/api";
 import {
   DataTable,
   ErrorState,
-  GlassCard,
   LoadingState,
   PageHeader,
   type DataTableColumn,
@@ -53,87 +52,199 @@ const DRIFT_METRIC_LABELS: Record<DriftHistoryItem["metric_type"], string> = {
   system: "System",
 };
 
-/** Meter colour by drifted-feature share (higher share ⇒ more severe). */
-function shareSeverityClass(share: number): string {
-  if (share >= 0.5) return "bg-red-500";
-  if (share >= 0.25) return "bg-amber-500";
-  if (share > 0) return "bg-yellow-400";
-  return "bg-green-500";
+const listContainer = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.05, delayChildren: 0.04 } },
+};
+const listItem = {
+  hidden: { opacity: 0, y: 12 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3, ease: "easeOut" as const },
+  },
+};
+
+/** Semantic severity for the drifted-feature share (higher share = worse). */
+type Severity = "calm" | "watch" | "elevated" | "high";
+
+function shareSeverity(share: number): Severity {
+  if (share >= 0.5) return "high";
+  if (share >= 0.25) return "elevated";
+  if (share > 0) return "watch";
+  return "calm";
+}
+
+/** Token-driven colour for each severity band (no raw hex, theme-aware). */
+const SEVERITY_STROKE: Record<Severity, string> = {
+  calm: "text-success",
+  watch: "text-warning",
+  elevated: "text-warning",
+  high: "text-destructive",
+};
+const SEVERITY_LABEL: Record<Severity, string> = {
+  calm: "Within range",
+  watch: "Minor shift",
+  elevated: "Watch closely",
+  high: "Significant drift",
+};
+
+/**
+ * Signature instrument: an animated arc gauge for the share of features that
+ * have drifted. Sweeps a 240° track and fills proportionally on mount.
+ */
+function DriftGauge({ share }: { share: number }) {
+  const clamped = Math.min(1, Math.max(0, share));
+  const pct = Math.round(clamped * 100);
+  const severity = shareSeverity(clamped);
+
+  // Geometry for a 240° open-bottom arc.
+  const size = 148;
+  const stroke = 12;
+  const radius = (size - stroke) / 2;
+  const cx = size / 2;
+  const cy = size / 2;
+  const sweep = 240; // degrees of visible track
+  const startAngle = 150; // bottom-left
+  const circumference = 2 * Math.PI * radius;
+  const arcLength = (sweep / 360) * circumference;
+  const gap = circumference - arcLength;
+
+  const polar = (angleDeg: number) => {
+    const a = (angleDeg * Math.PI) / 180;
+    return { x: cx + radius * Math.cos(a), y: cy + radius * Math.sin(a) };
+  };
+  const start = polar(startAngle);
+
+  return (
+    <div className="relative mx-auto w-fit">
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="overflow-visible"
+        role="img"
+        aria-label={`${pct}% of features drifted — ${SEVERITY_LABEL[severity]}`}
+      >
+        {/* Track */}
+        <circle
+          cx={cx}
+          cy={cy}
+          r={radius}
+          fill="none"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          className="stroke-muted"
+          strokeDasharray={`${arcLength} ${gap}`}
+          transform={`rotate(${startAngle - 180} ${cx} ${cy})`}
+        />
+        {/* Filled progress arc */}
+        <motion.circle
+          cx={cx}
+          cy={cy}
+          r={radius}
+          fill="none"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          className={cn(SEVERITY_STROKE[severity], "transition-colors")}
+          stroke="currentColor"
+          strokeDasharray={`${arcLength} ${circumference}`}
+          transform={`rotate(${startAngle - 180} ${cx} ${cy})`}
+          initial={{ strokeDashoffset: arcLength }}
+          animate={{ strokeDashoffset: arcLength - arcLength * clamped }}
+          transition={{ duration: 0.9, ease: "easeOut" }}
+        />
+        {/* endpoint dot for a needle-like read */}
+        <circle cx={start.x} cy={start.y} r={2.5} className="fill-muted-foreground/40" />
+      </svg>
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-4xl font-bold leading-none tabular-nums text-foreground">
+          {pct}
+          <span className="text-lg font-semibold text-muted-foreground">%</span>
+        </span>
+        <span className="mt-1 text-[0.7rem] font-medium uppercase tracking-wider text-muted-foreground">
+          drifted
+        </span>
+      </div>
+    </div>
+  );
 }
 
 function DataDriftCard({ drift }: { drift: DataDriftResult | null }) {
   const share = drift ? drift.share_drifted : 0;
-  const sharePct = Math.round(Math.min(1, Math.max(0, share)) * 100);
+  const severity = shareSeverity(Math.min(1, Math.max(0, share)));
 
   return (
-    <GlassCard className="p-5">
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-base font-semibold">
-          <BarChart3 className="h-5 w-5 text-primary" aria-hidden="true" />
-          Data drift
-        </h2>
+    <div className="gradient-border h-full p-[1px]">
+      <div className="flex h-full flex-col gap-5 rounded-3xl bg-card p-6">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Input distribution
+            </p>
+            <h2 className="flex items-center gap-2 text-base font-bold tracking-tight">
+              <BarChart3 className="h-5 w-5 text-electric" aria-hidden="true" />
+              Data drift
+            </h2>
+          </div>
+          {drift ? (
+            <Badge variant={drift.data_drift_detected ? "danger" : "success"}>
+              {drift.data_drift_detected ? "Drift detected" : "Stable"}
+            </Badge>
+          ) : (
+            <Badge variant="secondary">Not checked</Badge>
+          )}
+        </div>
+
         {drift ? (
-          <Badge variant={drift.data_drift_detected ? "danger" : "success"}>
-            {drift.data_drift_detected ? "Drift detected" : "Stable"}
-          </Badge>
+          <div className="flex flex-1 flex-col gap-5">
+            <DriftGauge share={share} />
+
+            <p
+              className={cn(
+                "text-center text-sm font-medium",
+                SEVERITY_STROKE[severity],
+              )}
+            >
+              {SEVERITY_LABEL[severity]}
+            </p>
+
+            <div>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Drifted features
+              </p>
+              {drift.drifted_features.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  None — all features within range.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {drift.drifted_features.map((feature) => (
+                    <Badge key={feature} variant="warning">
+                      {feature}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <p className="mt-auto text-xs text-muted-foreground">
+              Last checked {formatDateTime(drift.checked_at)}
+            </p>
+          </div>
         ) : (
-          <Badge variant="secondary">Not checked</Badge>
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 py-6 text-center">
+            <div className="grid-backdrop flex h-14 w-14 items-center justify-center rounded-full border border-border/60">
+              <BarChart3 className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
+            </div>
+            <p className="max-w-xs text-sm text-muted-foreground">
+              No data-drift report yet. Run a check to compare recent prediction
+              inputs against the training baseline.
+            </p>
+          </div>
         )}
       </div>
-
-      {drift ? (
-        <div className="space-y-4">
-          <div>
-            <div className="mb-1.5 flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Features drifted</span>
-              <span className="font-semibold tabular-nums">{sharePct}%</span>
-            </div>
-            <div
-              className="h-2.5 w-full overflow-hidden rounded-full bg-muted"
-              role="progressbar"
-              aria-valuenow={sharePct}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label="Share of features drifted"
-            >
-              <div
-                className={cn(
-                  "h-full rounded-full transition-all",
-                  shareSeverityClass(share),
-                )}
-                style={{ width: `${sharePct}%` }}
-              />
-            </div>
-          </div>
-
-          <div>
-            <p className="mb-2 text-sm text-muted-foreground">
-              Drifted features
-            </p>
-            {drift.drifted_features.length === 0 ? (
-              <p className="text-sm">None — all features within range.</p>
-            ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {drift.drifted_features.map((feature) => (
-                  <Badge key={feature} variant="warning">
-                    {feature}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <p className="text-xs text-muted-foreground">
-            Last checked {formatDateTime(drift.checked_at)}
-          </p>
-        </div>
-      ) : (
-        <p className="py-4 text-sm text-muted-foreground">
-          No data-drift report yet. Run a check to compare recent prediction
-          inputs against the training baseline.
-        </p>
-      )}
-    </GlassCard>
+    </div>
   );
 }
 
@@ -143,53 +254,71 @@ function PredictionDriftCard({
   drift: PredictionDriftResult | null;
 }) {
   return (
-    <GlassCard className="p-5">
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-base font-semibold">
-          <Activity className="h-5 w-5 text-primary" aria-hidden="true" />
-          Prediction drift
-        </h2>
-        {drift ? (
-          <Badge variant={drift.drift_detected ? "danger" : "success"}>
-            {drift.drift_detected ? "Drift detected" : "Stable"}
-          </Badge>
-        ) : (
-          <Badge variant="secondary">Not checked</Badge>
-        )}
-      </div>
-
-      {drift ? (
-        <div className="space-y-4">
+    <div className="gradient-border h-full p-[1px]">
+      <div className="flex h-full flex-col gap-5 rounded-3xl bg-card p-6">
+        <div className="flex items-start justify-between gap-2">
           <div>
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Output distribution
+            </p>
+            <h2 className="flex items-center gap-2 text-base font-bold tracking-tight">
+              <Activity className="h-5 w-5 text-electric" aria-hidden="true" />
+              Prediction drift
+            </h2>
+          </div>
+          {drift ? (
+            <Badge variant={drift.drift_detected ? "danger" : "success"}>
+              {drift.drift_detected ? "Drift detected" : "Stable"}
+            </Badge>
+          ) : (
+            <Badge variant="secondary">Not checked</Badge>
+          )}
+        </div>
+
+        {drift ? (
+          <div className="flex flex-1 flex-col gap-5">
+            <div className="rounded-2xl border border-border/60 bg-muted/30 p-5 text-center">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Population Stability Index
+              </p>
+              <motion.p
+                className={cn(
+                  "mt-2 text-5xl font-bold tabular-nums",
+                  drift.drift_detected ? "text-destructive" : "text-success",
+                )}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
+              >
+                {drift.psi.toFixed(3)}
+              </motion.p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Threshold 0.20
+              </p>
+            </div>
+
             <p className="text-sm text-muted-foreground">
-              Population Stability Index (PSI)
+              PSI above the 0.20 threshold signals a distribution shift in the
+              model&apos;s predicted probabilities.
             </p>
-            <p
-              className={cn(
-                "mt-1 text-4xl font-bold tabular-nums",
-                drift.drift_detected
-                  ? "text-red-600 dark:text-red-400"
-                  : "text-green-600 dark:text-green-400",
-              )}
-            >
-              {drift.psi.toFixed(3)}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Threshold 0.20 · PSI above this signals distribution shift in
-              predicted probabilities.
+
+            <p className="mt-auto text-xs text-muted-foreground">
+              Last checked {formatDateTime(drift.checked_at)}
             </p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Last checked {formatDateTime(drift.checked_at)}
-          </p>
-        </div>
-      ) : (
-        <p className="py-4 text-sm text-muted-foreground">
-          No prediction-drift report yet. PSI is computed once enough recent
-          predictions exist.
-        </p>
-      )}
-    </GlassCard>
+        ) : (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 py-6 text-center">
+            <div className="grid-backdrop flex h-14 w-14 items-center justify-center rounded-full border border-border/60">
+              <Activity className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
+            </div>
+            <p className="max-w-xs text-sm text-muted-foreground">
+              No prediction-drift report yet. PSI is computed once enough recent
+              predictions exist.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -247,7 +376,7 @@ export default function AdminMonitoringPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title="Monitoring"
         description="Data & prediction drift against the training baseline, with links to the MLOps stack."
@@ -276,53 +405,88 @@ export default function AdminMonitoringPage() {
         />
       ) : (
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
-          className="space-y-6"
+          variants={listContainer}
+          initial="hidden"
+          animate="show"
+          className="space-y-8"
         >
-          <div className="grid gap-6 lg:grid-cols-2">
-            <DataDriftCard drift={dataDrift} />
-            <PredictionDriftCard drift={predictionDrift} />
-          </div>
+          <section className="space-y-4">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Drift instruments
+              </p>
+              <h2 className="text-lg font-bold tracking-tight">
+                Are recent predictions still in-distribution?
+              </h2>
+            </div>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <motion.div
+                variants={listItem}
+                whileHover={{ y: -2 }}
+                transition={{ type: "spring", stiffness: 380, damping: 28 }}
+                className="transition-shadow hover:drop-shadow-[0_12px_28px_hsl(var(--primary)/0.12)]"
+              >
+                <DataDriftCard drift={dataDrift} />
+              </motion.div>
+              <motion.div
+                variants={listItem}
+                whileHover={{ y: -2 }}
+                transition={{ type: "spring", stiffness: 380, damping: 28 }}
+                className="transition-shadow hover:drop-shadow-[0_12px_28px_hsl(var(--primary)/0.12)]"
+              >
+                <PredictionDriftCard drift={predictionDrift} />
+              </motion.div>
+            </div>
+          </section>
 
           {/* Monitoring history --------------------------------------------- */}
-          <GlassCard className="p-5">
-            <div className="mb-4 flex items-center gap-2">
-              <Gauge className="h-5 w-5 text-primary" aria-hidden="true" />
-              <h2 className="text-base font-semibold">Monitoring history</h2>
+          <motion.section variants={listItem} className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Gauge className="h-4 w-4 text-primary" aria-hidden="true" />
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Monitoring history
+              </p>
             </div>
-            <DataTable
-              columns={historyColumns}
-              data={historyItems}
-              rowKey={(row) => row.id}
-              emptyMessage="No drift checks recorded yet"
-              className={cn(drift.isFetching && "opacity-70")}
-            />
-          </GlassCard>
+            <div className="surface-card p-5">
+              <DataTable
+                columns={historyColumns}
+                data={historyItems}
+                rowKey={(row) => row.id}
+                emptyMessage="No drift checks recorded yet"
+                className={cn(drift.isFetching && "opacity-70")}
+              />
+            </div>
+          </motion.section>
         </motion.div>
       )}
 
       {/* External MLOps dashboards ------------------------------------------ */}
-      <GlassCard className="p-5">
-        <div className="mb-4 flex items-center gap-2">
-          <RadioTower className="h-5 w-5 text-primary" aria-hidden="true" />
-          <h2 className="text-base font-semibold">MLOps dashboards</h2>
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <RadioTower className="h-4 w-4 text-primary" aria-hidden="true" />
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            MLOps dashboards
+          </p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           {EXTERNAL_LINKS.map((link) => (
             <a
               key={link.name}
               href={link.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-center justify-between gap-3 rounded-xl border bg-card/40 px-4 py-3 transition-colors hover:border-primary/60 hover:bg-primary/5"
+              className="surface-card group flex items-center justify-between gap-3 p-5 transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-[var(--shadow-lg)]"
             >
-              <div className="min-w-0">
-                <p className="font-medium">{link.name}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {link.description}
-                </p>
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
+                  <RadioTower className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold">{link.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {link.description}
+                  </p>
+                </div>
               </div>
               <ExternalLink
                 className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary"
@@ -331,7 +495,7 @@ export default function AdminMonitoringPage() {
             </a>
           ))}
         </div>
-      </GlassCard>
+      </section>
     </div>
   );
 }

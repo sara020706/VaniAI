@@ -1,5 +1,15 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Loader2, UserPlus } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  AtSign,
+  Eye,
+  EyeOff,
+  Hash,
+  Loader2,
+  Lock,
+  User,
+  UserPlus,
+} from "lucide-react";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Link, Navigate, useNavigate } from "react-router-dom";
@@ -19,10 +29,20 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import { BATCHES, DEPARTMENTS, ROLE_HOME_ROUTES } from "@/lib/constants";
-import { getApiErrorMessage } from "@/lib/utils";
+import { cn, getApiErrorMessage } from "@/lib/utils";
 import type { RegisterPayload } from "@/types";
 
 const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
+
+const fieldStagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.05 } },
+};
+
+const fieldItem = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+};
 
 const registerSchema = z
   .object({
@@ -139,44 +159,81 @@ function RegisterPage() {
         </p>
       }
     >
-      <form onSubmit={(event) => void onSubmit(event)} className="space-y-4" noValidate>
-        <div className="space-y-1.5">
+      <motion.form
+        onSubmit={(event) => void onSubmit(event)}
+        className="space-y-4"
+        noValidate
+        variants={fieldStagger}
+        initial="hidden"
+        animate="show"
+      >
+        <motion.div variants={fieldItem} className="space-y-1.5">
           <Label htmlFor="full_name">Full name</Label>
-          <Input
-            id="full_name"
-            autoComplete="name"
-            placeholder="Priya Sharma"
-            aria-invalid={Boolean(errors.full_name)}
-            {...register("full_name")}
-          />
+          <div className="group relative">
+            <User
+              className="pointer-events-none absolute inset-y-0 left-3 my-auto h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary"
+              aria-hidden="true"
+            />
+            <Input
+              id="full_name"
+              autoComplete="name"
+              placeholder="Priya Sharma"
+              aria-invalid={Boolean(errors.full_name)}
+              className={cn(
+                "h-11 rounded-xl pl-10 shadow-sm transition-shadow focus-visible:shadow-glow",
+                errors.full_name && "border-destructive/60",
+              )}
+              {...register("full_name")}
+            />
+          </div>
           <FieldError message={errors.full_name?.message} />
-        </div>
+        </motion.div>
 
-        <div className="space-y-1.5">
+        <motion.div variants={fieldItem} className="space-y-1.5">
           <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            placeholder="you@college.edu"
-            aria-invalid={Boolean(errors.email)}
-            {...register("email")}
-          />
+          <div className="group relative">
+            <AtSign
+              className="pointer-events-none absolute inset-y-0 left-3 my-auto h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary"
+              aria-hidden="true"
+            />
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@college.edu"
+              aria-invalid={Boolean(errors.email)}
+              className={cn(
+                "h-11 rounded-xl pl-10 shadow-sm transition-shadow focus-visible:shadow-glow",
+                errors.email && "border-destructive/60",
+              )}
+              {...register("email")}
+            />
+          </div>
           <FieldError message={errors.email?.message} />
-        </div>
+        </motion.div>
 
-        <div className="space-y-1.5">
+        <motion.div variants={fieldItem} className="space-y-1.5">
           <Label htmlFor="register_number">Register number</Label>
-          <Input
-            id="register_number"
-            placeholder="21CSE001"
-            aria-invalid={Boolean(errors.register_number)}
-            {...register("register_number")}
-          />
+          <div className="group relative">
+            <Hash
+              className="pointer-events-none absolute inset-y-0 left-3 my-auto h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary"
+              aria-hidden="true"
+            />
+            <Input
+              id="register_number"
+              placeholder="21CSE001"
+              aria-invalid={Boolean(errors.register_number)}
+              className={cn(
+                "h-11 rounded-xl pl-10 shadow-sm transition-shadow focus-visible:shadow-glow",
+                errors.register_number && "border-destructive/60",
+              )}
+              {...register("register_number")}
+            />
+          </div>
           <FieldError message={errors.register_number?.message} />
-        </div>
+        </motion.div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <motion.div variants={fieldItem} className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-1.5">
             <Label htmlFor="department">Department</Label>
             <Controller
@@ -187,6 +244,10 @@ function RegisterPage() {
                   <SelectTrigger
                     id="department"
                     aria-invalid={Boolean(errors.department)}
+                    className={cn(
+                      "h-11 rounded-xl shadow-sm",
+                      errors.department && "border-destructive/60",
+                    )}
                   >
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
@@ -210,7 +271,14 @@ function RegisterPage() {
               name="batch"
               render={({ field }) => (
                 <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                  <SelectTrigger id="batch" aria-invalid={Boolean(errors.batch)}>
+                  <SelectTrigger
+                    id="batch"
+                    aria-invalid={Boolean(errors.batch)}
+                    className={cn(
+                      "h-11 rounded-xl shadow-sm",
+                      errors.batch && "border-destructive/60",
+                    )}
+                  >
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
@@ -239,6 +307,10 @@ function RegisterPage() {
                   <SelectTrigger
                     id="semester"
                     aria-invalid={Boolean(errors.semester)}
+                    className={cn(
+                      "h-11 rounded-xl shadow-sm",
+                      errors.semester && "border-destructive/60",
+                    )}
                   >
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
@@ -254,25 +326,32 @@ function RegisterPage() {
             />
             <FieldError message={errors.semester?.message} />
           </div>
-        </div>
+        </motion.div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <motion.div variants={fieldItem} className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="password">Password</Label>
-            <div className="relative">
+            <div className="group relative">
+              <Lock
+                className="pointer-events-none absolute inset-y-0 left-3 my-auto h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary"
+                aria-hidden="true"
+              />
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
                 placeholder="Min. 8 characters"
-                className="pr-10"
+                className={cn(
+                  "h-11 rounded-xl pl-10 pr-10 shadow-sm transition-shadow focus-visible:shadow-glow",
+                  errors.password && "border-destructive/60",
+                )}
                 aria-invalid={Boolean(errors.password)}
                 {...register("password")}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((previous) => !previous)}
-                className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-xl text-muted-foreground transition-colors hover:text-foreground"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? (
@@ -287,32 +366,44 @@ function RegisterPage() {
 
           <div className="space-y-1.5">
             <Label htmlFor="confirm_password">Confirm password</Label>
-            <Input
-              id="confirm_password"
-              type={showPassword ? "text" : "password"}
-              autoComplete="new-password"
-              placeholder="Repeat password"
-              aria-invalid={Boolean(errors.confirm_password)}
-              {...register("confirm_password")}
-            />
+            <div className="group relative">
+              <Lock
+                className="pointer-events-none absolute inset-y-0 left-3 my-auto h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary"
+                aria-hidden="true"
+              />
+              <Input
+                id="confirm_password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                placeholder="Repeat password"
+                aria-invalid={Boolean(errors.confirm_password)}
+                className={cn(
+                  "h-11 rounded-xl pl-10 shadow-sm transition-shadow focus-visible:shadow-glow",
+                  errors.confirm_password && "border-destructive/60",
+                )}
+                {...register("confirm_password")}
+              />
+            </div>
             <FieldError message={errors.confirm_password?.message} />
           </div>
-        </div>
+        </motion.div>
 
-        <Button
-          type="submit"
-          variant="gradient"
-          className="w-full"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <Loader2 className="animate-spin" aria-hidden="true" />
-          ) : (
-            <UserPlus aria-hidden="true" />
-          )}
-          {isSubmitting ? "Creating account…" : "Create account"}
-        </Button>
-      </form>
+        <motion.div variants={fieldItem} className="pt-1">
+          <Button
+            type="submit"
+            variant="gradient"
+            className="h-11 w-full rounded-xl text-sm font-semibold"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <Loader2 className="animate-spin" aria-hidden="true" />
+            ) : (
+              <UserPlus aria-hidden="true" />
+            )}
+            {isSubmitting ? "Creating account…" : "Create account"}
+          </Button>
+        </motion.div>
+      </motion.form>
     </AuthLayout>
   );
 }

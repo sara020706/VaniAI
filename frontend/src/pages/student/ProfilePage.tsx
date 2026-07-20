@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import {
   Award,
   Briefcase,
@@ -10,6 +11,7 @@ import {
   Loader2,
   Plus,
   Save,
+  Sparkles,
   Trophy,
   Trash2,
   UserRound,
@@ -24,6 +26,7 @@ import {
   ErrorState,
   GlassCard,
   PageHeader,
+  StatCard,
 } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -63,6 +66,23 @@ import type {
 } from "@/types";
 
 import { studentKeys, useMe } from "@/pages/student/use-student";
+
+// ---------------------------------------------------------------------------
+// Entrance motion — card stagger shared across the page sections.
+// ---------------------------------------------------------------------------
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06, delayChildren: 0.04 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.25 } },
+};
 
 // ---------------------------------------------------------------------------
 // Profile form (personal + academic + skills) — matches backend ranges.
@@ -406,23 +426,25 @@ function SectionCard({
   action?: ReactNode;
 }) {
   return (
-    <GlassCard className="p-5">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="gradient-primary flex h-8 w-8 items-center justify-center rounded-lg text-white shadow">
-            <Icon className="h-4 w-4" aria-hidden="true" />
+    <div className="surface-card h-full rounded-3xl p-6">
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10 text-primary">
+            <Icon className="h-5 w-5" aria-hidden="true" />
           </span>
-          <div>
-            <h3 className="text-base font-semibold leading-tight">{title}</h3>
+          <div className="min-w-0">
+            <h3 className="text-base font-semibold leading-tight tracking-tight">
+              {title}
+            </h3>
             {description && (
-              <p className="text-xs text-muted-foreground">{description}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
             )}
           </div>
         </div>
-        {action}
+        {action && <div className="shrink-0">{action}</div>}
       </div>
       {children}
-    </GlassCard>
+    </div>
   );
 }
 
@@ -539,15 +561,36 @@ function CrudList<TItem extends { id: number }, TValues extends FieldValues, TPa
       }
     >
       {items.length === 0 ? (
-        <div className="rounded-xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-          {emptyLabel}
+        <div className="grid-backdrop flex flex-col items-center gap-3 rounded-2xl border border-dashed px-4 py-10 text-center">
+          <span className="flex h-11 w-11 items-center justify-center rounded-full border border-primary/15 bg-primary/10 text-primary">
+            {(() => {
+              const EmptyIcon = icon;
+              return <EmptyIcon className="h-5 w-5" aria-hidden="true" />;
+            })()}
+          </span>
+          <p className="text-sm text-muted-foreground">{emptyLabel}</p>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              reset(defaults as never);
+              setOpen(true);
+            }}
+          >
+            <Plus aria-hidden="true" />
+            Add {singular.toLowerCase()}
+          </Button>
         </div>
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-2.5">
           {items.map((item) => (
-            <li
+            <motion.li
               key={item.id}
-              className="flex items-start justify-between gap-3 rounded-xl border bg-card/50 p-3"
+              variants={itemVariants}
+              whileHover={{ y: -2 }}
+              transition={{ type: "spring", stiffness: 380, damping: 28 }}
+              className="flex items-start justify-between gap-3 rounded-2xl border bg-card/60 p-4 transition-shadow hover:shadow-[var(--shadow-md)]"
             >
               <div className="min-w-0">{renderItem(item)}</div>
               <Button
@@ -565,7 +608,7 @@ function CrudList<TItem extends { id: number }, TValues extends FieldValues, TPa
                   <Trash2 className="h-4 w-4" aria-hidden="true" />
                 )}
               </Button>
-            </li>
+            </motion.li>
           ))}
         </ul>
       )}
@@ -725,8 +768,17 @@ export default function ProfilePage() {
   const meQuery = useMe();
   const student = meQuery.data;
 
+  const initials = student
+    ? student.full_name
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase() ?? "")
+        .join("")
+    : "";
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title="My Profile"
         description="Keep your academic record, skills and experience up to date for the most accurate predictions."
@@ -737,10 +789,125 @@ export default function ProfilePage() {
       ) : meQuery.isLoading || !student ? (
         <ProfileSkeleton />
       ) : (
-        <>
-          <ProfileForm student={student} />
+        <motion.div
+          className="space-y-8"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {/* Identity strip */}
+          <motion.div variants={itemVariants}>
+            <GlassCard className="hero-sheen relative overflow-hidden rounded-3xl p-6 sm:p-7">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-4">
+                  <span
+                    aria-hidden="true"
+                    className="gradient-primary flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-xl font-bold text-white shadow-[var(--shadow-glow)]"
+                  >
+                    {initials || <UserRound className="h-7 w-7" />}
+                  </span>
+                  <div className="min-w-0">
+                    <h2 className="truncate text-2xl font-bold tracking-tight">
+                      {student.full_name}
+                    </h2>
+                    <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                      <span className="font-mono font-medium text-foreground">
+                        {student.register_number}
+                      </span>
+                      <span aria-hidden="true">·</span>
+                      <span>{student.email}</span>
+                    </p>
+                    <div className="mt-2.5 flex flex-wrap gap-2">
+                      <Badge variant="secondary">{student.department}</Badge>
+                      <Badge variant="secondary">Batch {student.batch}</Badge>
+                      <Badge variant="secondary">
+                        Semester {student.semester}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </GlassCard>
+          </motion.div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          {/* Portfolio at a glance */}
+          <motion.div
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            variants={containerVariants}
+          >
+            <motion.div variants={itemVariants}>
+              <StatCard
+                title="CGPA"
+                value={
+                  student.academic.cgpa != null
+                    ? student.academic.cgpa.toFixed(2)
+                    : "—"
+                }
+                icon={GraduationCap}
+                gradient
+                description="Out of 10"
+              />
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <StatCard
+                title="Projects"
+                value={student.experience.projects.length}
+                icon={FolderGit2}
+                description="In your portfolio"
+              />
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <StatCard
+                title="Internships"
+                value={student.experience.internships.length}
+                icon={Briefcase}
+                description="Work experience"
+              />
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <StatCard
+                title="Certifications"
+                value={student.experience.certifications.length}
+                icon={Award}
+                description="Credentials earned"
+              />
+            </motion.div>
+          </motion.div>
+
+          {/* Editable profile */}
+          <motion.section className="space-y-4" variants={containerVariants}>
+            <div className="flex items-center gap-2">
+              <Sparkles
+                className="h-4 w-4 text-electric"
+                aria-hidden="true"
+              />
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Your record
+                </p>
+                <h2 className="text-lg font-bold tracking-tight">
+                  Details that drive your prediction
+                </h2>
+              </div>
+            </div>
+            <ProfileForm student={student} />
+          </motion.section>
+
+          {/* Experience */}
+          <motion.section className="space-y-4" variants={containerVariants}>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Portfolio
+              </p>
+              <h2 className="text-lg font-bold tracking-tight">
+                Projects &amp; achievements
+              </h2>
+            </div>
+            <motion.div
+              className="grid gap-6 lg:grid-cols-2"
+              variants={containerVariants}
+            >
+            <motion.div variants={itemVariants}>
             <CrudList<Project, ProjectFormValues, ProjectPayload>
               title="Projects"
               icon={FolderGit2}
@@ -804,6 +971,9 @@ export default function ProfilePage() {
               )}
             />
 
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
             <CrudList<Internship, InternshipFormValues, InternshipPayload>
               title="Internships"
               icon={Briefcase}
@@ -856,6 +1026,9 @@ export default function ProfilePage() {
               )}
             />
 
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
             <CrudList<Certification, CertificationFormValues, CertificationPayload>
               title="Certifications"
               icon={Award}
@@ -915,6 +1088,9 @@ export default function ProfilePage() {
               )}
             />
 
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
             <CrudList<Hackathon, HackathonFormValues, HackathonPayload>
               title="Hackathons"
               icon={Trophy}
@@ -961,8 +1137,10 @@ export default function ProfilePage() {
                 </>
               )}
             />
-          </div>
-        </>
+            </motion.div>
+            </motion.div>
+          </motion.section>
+        </motion.div>
       )}
     </div>
   );

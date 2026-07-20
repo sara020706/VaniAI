@@ -64,16 +64,26 @@ export function ExperimentStatusBadge({ status }: { status: ExperimentStatus }) 
   return <StatusPill meta={EXPERIMENT_STATUS_META[status]} />;
 }
 
-/** Small round status dot — green when healthy, red otherwise. */
+/** Small round status dot — teal when healthy, rose otherwise. */
 export function StatusDot({ ok }: { ok: boolean }) {
   return (
     <span
+      role="img"
+      aria-label={ok ? "Healthy" : "Unhealthy"}
       className={cn(
-        "inline-block h-2.5 w-2.5 shrink-0 rounded-full",
-        ok ? "bg-green-500" : "bg-red-500",
+        "relative inline-flex h-2.5 w-2.5 shrink-0 rounded-full",
+        ok ? "bg-success" : "bg-destructive",
       )}
-      aria-hidden="true"
-    />
+    >
+      <span
+        className={cn(
+          "absolute inset-0 rounded-full opacity-60",
+          ok ? "bg-success" : "bg-destructive",
+          ok && "motion-safe:animate-ping",
+        )}
+        aria-hidden="true"
+      />
+    </span>
   );
 }
 

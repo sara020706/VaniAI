@@ -1,14 +1,16 @@
 import { useMutation } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import {
   CheckCircle2,
   Download,
   FileBarChart,
   Info,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { ErrorState, GlassCard, PageHeader } from "@/components/shared";
+import { ErrorState, PageHeader } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { reportApi } from "@/lib/api";
@@ -23,6 +25,19 @@ const REPORT_CONTENTS: string[] = [
   "Latest placement probability, risk level and readiness breakdown",
   "Prioritised recommendations to improve your readiness",
 ];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06, delayChildren: 0.04 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.25 } },
+};
 
 export default function ReportsPage() {
   const meQuery = useMe();
@@ -39,7 +54,7 @@ export default function ReportsPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title="Reports"
         description="Download a shareable PDF summary of your placement readiness."
@@ -48,69 +63,107 @@ export default function ReportsPage() {
       {meQuery.isError ? (
         <ErrorState onRetry={() => void meQuery.refetch()} />
       ) : meQuery.isLoading || !studentId ? (
-        <Skeleton className="h-64 rounded-2xl" />
+        <Skeleton className="h-72 rounded-3xl" />
       ) : (
-        <GlassCard className="p-6">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-            <div className="gradient-primary flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-md">
-              <FileBarChart className="h-7 w-7" aria-hidden="true" />
+        <motion.div
+          className="grid gap-6 lg:grid-cols-3"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {/* Primary report — the premium AI/prediction-derived card */}
+          <motion.div
+            variants={itemVariants}
+            whileHover={{ y: -2 }}
+            className="lg:col-span-2"
+          >
+            <div className="gradient-border h-full transition-shadow hover:shadow-[var(--shadow-glow)]">
+              <div className="hero-sheen rounded-[calc(1.5rem-1px)] p-6 sm:p-8">
+                <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+                  <div className="gradient-primary flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-primary-foreground shadow-md">
+                    <FileBarChart className="h-7 w-7" aria-hidden="true" />
+                  </div>
+
+                  <div className="min-w-0 flex-1 space-y-3">
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                      <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                      Generated from your latest data
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
+                        Student Readiness Report
+                      </h2>
+                      <p className="mt-2 max-w-prose text-sm text-muted-foreground">
+                        A professionally formatted PDF you can share with mentors
+                        or attach to applications. It is generated on demand from
+                        your latest profile and prediction data.
+                      </p>
+                    </div>
+
+                    <div className="pt-1">
+                      <Button
+                        variant="gradient"
+                        size="lg"
+                        onClick={() => downloadMutation.mutate()}
+                        disabled={downloadMutation.isPending}
+                      >
+                        {downloadMutation.isPending ? (
+                          <Loader2 className="animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Download aria-hidden="true" />
+                        )}
+                        {downloadMutation.isPending
+                          ? "Generating…"
+                          : "Download PDF report"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+          </motion.div>
 
-            <div className="min-w-0 flex-1 space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold">Student Readiness Report</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  A professionally formatted PDF you can share with mentors or
-                  attach to applications. It is generated on demand from your
-                  latest profile and prediction data.
-                </p>
-              </div>
+          {/* What's inside */}
+          <motion.div variants={itemVariants} whileHover={{ y: -2 }}>
+            <div className="surface-card h-full p-6 transition-shadow hover:shadow-[var(--shadow-lg)]">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Contents
+              </p>
+              <h3 className="mb-4 mt-1 flex items-center gap-2 text-lg font-bold tracking-tight">
+                <Info className="h-4 w-4 text-primary" aria-hidden="true" />
+                What&apos;s inside
+              </h3>
+              <ul className="space-y-3">
+                {REPORT_CONTENTS.map((content) => (
+                  <li
+                    key={content}
+                    className="flex items-start gap-2.5 text-sm text-muted-foreground"
+                  >
+                    <CheckCircle2
+                      className="mt-0.5 h-4 w-4 shrink-0 text-success"
+                      aria-hidden="true"
+                    />
+                    <span>{content}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </motion.div>
 
-              <div className="rounded-xl border bg-card/50 p-4">
-                <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
-                  <Info className="h-4 w-4 text-primary" aria-hidden="true" />
-                  What's inside
-                </p>
-                <ul className="space-y-1.5">
-                  {REPORT_CONTENTS.map((content) => (
-                    <li
-                      key={content}
-                      className="flex items-start gap-2 text-sm text-muted-foreground"
-                    >
-                      <CheckCircle2
-                        className="mt-0.5 h-4 w-4 shrink-0 text-green-600 dark:text-green-400"
-                        aria-hidden="true"
-                      />
-                      <span>{content}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
+          {/* Tip */}
+          <motion.div variants={itemVariants} className="lg:col-span-3">
+            <div className="grid-backdrop surface-card flex items-start gap-3 p-4">
+              <Sparkles
+                className="mt-0.5 h-4 w-4 shrink-0 text-cyan"
+                aria-hidden="true"
+              />
               <p className="text-xs text-muted-foreground">
                 Tip: run a fresh prediction on your dashboard before downloading
                 so the report reflects your most recent scores.
               </p>
-
-              <div>
-                <Button
-                  variant="gradient"
-                  onClick={() => downloadMutation.mutate()}
-                  disabled={downloadMutation.isPending}
-                >
-                  {downloadMutation.isPending ? (
-                    <Loader2 className="animate-spin" aria-hidden="true" />
-                  ) : (
-                    <Download aria-hidden="true" />
-                  )}
-                  {downloadMutation.isPending
-                    ? "Generating…"
-                    : "Download PDF report"}
-                </Button>
-              </div>
             </div>
-          </div>
-        </GlassCard>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   );

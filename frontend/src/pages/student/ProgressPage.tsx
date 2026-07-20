@@ -1,4 +1,5 @@
 import { LineChart, Radar, TrendingUp, type LucideIcon } from "lucide-react";
+import { motion } from "framer-motion";
 import { useMemo, type ReactNode } from "react";
 
 import {
@@ -6,9 +7,9 @@ import {
   TrendLineChart,
   type ChartDatum,
 } from "@/components/charts";
-import { EmptyState, ErrorState, GlassCard, PageHeader } from "@/components/shared";
+import { EmptyState, ErrorState, PageHeader } from "@/components/shared";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatDate } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 import {
   usePredictionHistory,
@@ -17,35 +18,76 @@ import {
 } from "@/pages/student/use-student";
 
 // ---------------------------------------------------------------------------
+// Motion
+// ---------------------------------------------------------------------------
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06, delayChildren: 0.04 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+};
+
+// ---------------------------------------------------------------------------
 // Section shell
 // ---------------------------------------------------------------------------
 
 function Section({
+  eyebrow,
   title,
   description,
   icon: Icon,
+  premium = false,
   children,
 }: {
+  eyebrow: string;
   title: string;
   description?: string;
   icon: LucideIcon;
+  /** Wrap in the teal "AI" gradient ring — reserved for prediction/insight. */
+  premium?: boolean;
   children: ReactNode;
 }) {
   return (
-    <GlassCard className="p-5">
-      <div className="mb-4 flex items-center gap-2">
-        <span className="gradient-primary flex h-8 w-8 items-center justify-center rounded-lg text-white shadow">
-          <Icon className="h-4 w-4" aria-hidden="true" />
-        </span>
-        <div>
-          <h3 className="text-base font-semibold leading-tight">{title}</h3>
-          {description && (
-            <p className="text-xs text-muted-foreground">{description}</p>
-          )}
+    <motion.section variants={itemVariants} whileHover={{ y: -2 }}>
+      <div
+        className={cn(
+          "surface-card p-6 transition-shadow hover:shadow-[var(--shadow-lg)] sm:p-7",
+          premium && "gradient-border",
+        )}
+      >
+        <div className="mb-5 flex items-start gap-3">
+          <span
+            className={cn(
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border",
+              premium
+                ? "border-transparent bg-primary text-primary-foreground shadow-[var(--shadow-glow)]"
+                : "border-primary/15 bg-primary/10 text-primary",
+            )}
+          >
+            <Icon className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              {eyebrow}
+            </p>
+            <h2 className="text-lg font-bold leading-tight tracking-tight">
+              {title}
+            </h2>
+            {description && (
+              <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+            )}
+          </div>
         </div>
+        {children}
       </div>
-      {children}
-    </GlassCard>
+    </motion.section>
   );
 }
 
@@ -114,7 +156,7 @@ export default function ProgressPage() {
     historyQuery.isLoading;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title="My Progress"
         description="Track how your academics, skills and placement readiness have evolved over time."
@@ -130,15 +172,21 @@ export default function ProgressPage() {
         />
       ) : isLoading ? (
         <div className="space-y-6" aria-busy="true">
-          <Skeleton className="h-72 rounded-2xl" />
-          <Skeleton className="h-72 rounded-2xl" />
-          <Skeleton className="h-72 rounded-2xl" />
+          <Skeleton className="h-80 rounded-3xl" />
+          <Skeleton className="h-80 rounded-3xl" />
+          <Skeleton className="h-80 rounded-3xl" />
         </div>
       ) : (
-        <>
+        <motion.div
+          className="space-y-6"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
           <Section
+            eyebrow="Academics"
             title="Academic History"
-            description="CGPA (scaled to 100) and attendance across recorded snapshots"
+            description="CGPA (scaled to 100) and attendance across recorded snapshots."
             icon={TrendingUp}
           >
             {academicData.length >= 2 ? (
@@ -156,8 +204,9 @@ export default function ProgressPage() {
           </Section>
 
           <Section
+            eyebrow="Skills"
             title="Skill History"
-            description="Your skill scores across recorded snapshots"
+            description="Your skill scores across recorded snapshots."
             icon={Radar}
           >
             {skillData.length >= 2 ? (
@@ -179,9 +228,11 @@ export default function ProgressPage() {
           </Section>
 
           <Section
+            eyebrow="Prediction"
             title="Prediction History"
-            description="Placement probability and overall readiness across predictions"
+            description="Placement probability and overall readiness across predictions."
             icon={LineChart}
+            premium
           >
             {predictionData.length >= 2 ? (
               <TrendLineChart
@@ -196,7 +247,7 @@ export default function ProgressPage() {
               <ChartEmpty label="Run predictions over time from your dashboard to build this trend." />
             )}
           </Section>
-        </>
+        </motion.div>
       )}
     </div>
   );

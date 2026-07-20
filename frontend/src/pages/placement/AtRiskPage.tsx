@@ -13,7 +13,6 @@ import { toast } from "sonner";
 import {
   DataTable,
   ErrorState,
-  GlassCard,
   LoadingState,
   PageHeader,
   RiskBadge,
@@ -37,6 +36,19 @@ import type { AtRiskStudent, Department, RiskLevel } from "@/types";
 
 const ALL_VALUE = "__all__";
 const PAGE_SIZE = 20;
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06, delayChildren: 0.04 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.25 } },
+};
 
 /** Debounce a rapidly-changing value (e.g. a search box). */
 function useDebouncedValue<T>(value: T, delayMs: number): T {
@@ -127,15 +139,19 @@ export default function PlacementAtRiskPage() {
       header: "Reasons",
       render: (row) =>
         row.risk_reasons.length > 0 ? (
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {row.risk_reasons.map((reason) => (
-              <Badge key={reason} variant="outline" className="font-normal">
+              <Badge
+                key={reason}
+                variant="outline"
+                className="rounded-full border-warning/30 bg-warning/10 font-normal text-warning"
+              >
                 {reason}
               </Badge>
             ))}
           </div>
         ) : (
-          "—"
+          <span className="text-muted-foreground">—</span>
         ),
     },
   ];
@@ -146,7 +162,12 @@ export default function PlacementAtRiskPage() {
   const rangeEnd = Math.min(page * PAGE_SIZE, total);
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      className="space-y-6"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       <PageHeader
         title="At-Risk Students"
         description="Students flagged for placement risk, with the reasons behind each flag."
@@ -162,7 +183,7 @@ export default function PlacementAtRiskPage() {
         }
       />
 
-      <GlassCard className="p-4">
+      <motion.div variants={itemVariants} className="surface-card p-4 sm:p-5">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="sm:col-span-2 lg:col-span-1">
             <Label
@@ -240,19 +261,31 @@ export default function PlacementAtRiskPage() {
             </Select>
           </div>
         </div>
-      </GlassCard>
+      </motion.div>
 
       {query.isLoading ? (
         <LoadingState label="Loading at-risk students…" />
       ) : query.isError ? (
         <ErrorState onRetry={() => void query.refetch()} />
       ) : query.data ? (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
-          className="space-y-4"
-        >
+        <motion.section variants={itemVariants} className="space-y-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Placement risk roster
+              </p>
+              <h2 className="text-lg font-bold tracking-tight">
+                Students needing intervention
+              </h2>
+            </div>
+            {total > 0 ? (
+              <span className="text-sm tabular-nums text-muted-foreground">
+                <span className="font-semibold text-warning">{total}</span>{" "}
+                flagged
+              </span>
+            ) : null}
+          </div>
+
           <DataTable
             columns={columns}
             data={query.data.items}
@@ -293,8 +326,8 @@ export default function PlacementAtRiskPage() {
               </Button>
             </div>
           </div>
-        </motion.div>
+        </motion.section>
       ) : null}
-    </div>
+    </motion.div>
   );
 }

@@ -17,15 +17,28 @@ import {
   EmptyState,
   ErrorState,
   GlassCard,
-  LoadingState,
   PageHeader,
 } from "@/components/shared";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { predictionApi, studentApi } from "@/lib/api";
 import { formatDate, formatScore, getApiErrorMessage } from "@/lib/utils";
 import type { Student } from "@/types";
 
 import { PredictionView } from "./PredictionView";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06, delayChildren: 0.04 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+};
 
 function parseStudentId(raw: string | undefined): number | null {
   if (!raw) return null;
@@ -40,9 +53,11 @@ interface ProfileFactProps {
 
 function ProfileFact({ label, value }: ProfileFactProps) {
   return (
-    <div>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium tabular-nums">{value}</p>
+    <div className="rounded-2xl border border-border/60 bg-card/50 px-3.5 py-3">
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-1 text-lg font-semibold tabular-nums">{value}</p>
     </div>
   );
 }
@@ -155,33 +170,44 @@ export default function FacultyStudentDetailPage() {
       />
 
       {studentQuery.isLoading ? (
-        <LoadingState label="Loading student…" />
+        <div className="space-y-6" aria-busy="true">
+          <Skeleton className="h-44 rounded-3xl" />
+          <Skeleton className="h-64 rounded-3xl" />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Skeleton className="h-72 rounded-3xl" />
+            <Skeleton className="h-72 rounded-3xl" />
+          </div>
+        </div>
       ) : studentQuery.isError || !student ? (
         <ErrorState onRetry={() => void studentQuery.refetch()} />
       ) : (
         <motion.div
           className="space-y-6"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
         >
-          <GlassCard className="p-5">
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+          <motion.div variants={itemVariants}>
+          <GlassCard className="p-6">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Profile
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
               <span className="inline-flex items-center gap-2 text-muted-foreground">
-                <Mail className="h-4 w-4" aria-hidden="true" />
+                <Mail className="h-4 w-4 text-primary" aria-hidden="true" />
                 {student.email}
               </span>
               <span className="inline-flex items-center gap-2 text-muted-foreground">
-                <BookOpen className="h-4 w-4" aria-hidden="true" />
+                <BookOpen className="h-4 w-4 text-primary" aria-hidden="true" />
                 Semester {student.semester}
               </span>
               <span className="inline-flex items-center gap-2 text-muted-foreground">
-                <Briefcase className="h-4 w-4" aria-hidden="true" />
+                <Briefcase className="h-4 w-4 text-primary" aria-hidden="true" />
                 {student.experience.internship_count} internships ·{" "}
                 {student.experience.project_count} projects
               </span>
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
               <ProfileFact
                 label="CGPA"
                 value={formatScore(student.academic.cgpa, 2)}
@@ -208,15 +234,16 @@ export default function FacultyStudentDetailPage() {
               />
             </div>
           </GlassCard>
+          </motion.div>
 
           {student.latest_prediction ? (
             <PredictionView prediction={student.latest_prediction} />
           ) : (
-            <GlassCard className="p-5">
+            <motion.div variants={itemVariants} className="grid-backdrop surface-card p-6">
               <EmptyState
                 icon={Sparkles}
                 title="No prediction yet"
-                description="Run a prediction to generate readiness scores, explanations and recommendations for this student."
+                description="Run a prediction to generate readiness scores, an explainable score breakdown and personalised recommendations for this student."
                 action={
                   <Button
                     variant="gradient"
@@ -228,16 +255,29 @@ export default function FacultyStudentDetailPage() {
                   </Button>
                 }
               />
-            </GlassCard>
+            </motion.div>
           )}
 
-          <div>
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold">
-              <FileText className="h-4 w-4 text-primary" aria-hidden="true" />
-              Progress Over Time
-            </h2>
+          <motion.div variants={itemVariants}>
+            <div className="mb-4 flex items-start gap-3">
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10 text-primary">
+                <FileText className="h-[18px] w-[18px]" aria-hidden="true" />
+              </span>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  History
+                </p>
+                <h2 className="text-lg font-semibold leading-tight tracking-tight">
+                  Progress Over Time
+                </h2>
+              </div>
+            </div>
             {progressQuery.isLoading ? (
-              <LoadingState label="Loading progress…" />
+              <div className="grid gap-6 lg:grid-cols-2" aria-busy="true">
+                <Skeleton className="h-72 rounded-3xl" />
+                <Skeleton className="h-72 rounded-3xl" />
+                <Skeleton className="h-72 rounded-3xl lg:col-span-2" />
+              </div>
             ) : progressQuery.isError ? (
               <ErrorState onRetry={() => void progressQuery.refetch()} />
             ) : (
@@ -301,7 +341,7 @@ export default function FacultyStudentDetailPage() {
                 </GlassCard>
               </div>
             )}
-          </div>
+          </motion.div>
         </motion.div>
       )}
     </div>

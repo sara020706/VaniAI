@@ -48,6 +48,19 @@ import {
 
 const PAGE_SIZE = 10;
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06, delayChildren: 0.04 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.25 } },
+};
+
 // ---------------------------------------------------------------------------
 // Deploy confirm dialog
 // ---------------------------------------------------------------------------
@@ -75,13 +88,17 @@ function DeployDialog({
 
   return (
     <Dialog open={Boolean(model)} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md rounded-3xl">
         <DialogHeader>
+          <div className="mb-1 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <Rocket className="h-5 w-5" aria-hidden="true" />
+          </div>
           <DialogTitle>Deploy {model?.version}?</DialogTitle>
           <DialogDescription>
-            This activates {model?.version} ({model?.model_type}) and reloads
-            the predictor. All new predictions will use this model until another
-            version is deployed.
+            This activates{" "}
+            <span className="font-medium text-foreground">{model?.version}</span>{" "}
+            ({model?.model_type}) and reloads the predictor. All new predictions
+            will use this model until another version is deployed.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -248,7 +265,12 @@ export default function AdminModelsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      className="space-y-8"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       <PageHeader
         title="Models"
         description="Training runs, registered model versions, and deployment controls."
@@ -270,25 +292,38 @@ export default function AdminModelsPage() {
 
       {isTrainingRunning && (
         <motion.div
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200"
+          variants={itemVariants}
+          className="glass-card flex items-center gap-3 rounded-2xl border-warning/30 px-4 py-3 text-sm shadow-md"
           role="status"
         >
-          <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
-          <span>
-            A training run is in progress — this page refreshes automatically
-            every few seconds.
+          <span
+            className="relative flex h-2.5 w-2.5 shrink-0"
+            aria-hidden="true"
+          >
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-warning/60" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-warning" />
+          </span>
+          <span className="font-medium text-warning">Training in progress</span>
+          <span className="text-muted-foreground">
+            — this page refreshes automatically every few seconds.
           </span>
         </motion.div>
       )}
 
       {/* Training history --------------------------------------------------- */}
-      <GlassCard className="p-5">
-        <div className="mb-4 flex items-center gap-2">
-          <FlaskConical className="h-5 w-5 text-primary" aria-hidden="true" />
-          <h2 className="text-base font-semibold">Training history</h2>
-        </div>
+      <motion.div variants={itemVariants}>
+        <GlassCard className="p-6">
+          <div className="mb-1">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Experiments
+            </p>
+          </div>
+          <div className="mb-4 flex items-center gap-2">
+            <FlaskConical className="h-5 w-5 text-primary" aria-hidden="true" />
+            <h2 className="text-lg font-bold tracking-tight">
+              Training history
+            </h2>
+          </div>
         {history.isLoading ? (
           <LoadingState label="Loading training history…" />
         ) : history.isError ? (
@@ -342,15 +377,22 @@ export default function AdminModelsPage() {
             </div>
           </motion.div>
         ) : null}
-      </GlassCard>
+        </GlassCard>
+      </motion.div>
 
       {/* Model versions ---------------------------------------------------- */}
-      <GlassCard className="p-5">
-        <div className="mb-4 flex items-center gap-2">
-          <Boxes className="h-5 w-5 text-primary" aria-hidden="true" />
-          <h2 className="text-base font-semibold">Model versions</h2>
-        </div>
-        {models.isLoading ? (
+      <motion.div variants={itemVariants}>
+        <GlassCard className="p-6">
+          <div className="mb-1">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Registry
+            </p>
+          </div>
+          <div className="mb-4 flex items-center gap-2">
+            <Boxes className="h-5 w-5 text-primary" aria-hidden="true" />
+            <h2 className="text-lg font-bold tracking-tight">Model versions</h2>
+          </div>
+          {models.isLoading ? (
           <LoadingState label="Loading model versions…" />
         ) : models.isError ? (
           <ErrorState onRetry={() => void models.refetch()} />
@@ -368,13 +410,14 @@ export default function AdminModelsPage() {
               className={cn(models.isFetching && "opacity-70")}
             />
           </motion.div>
-        )}
-      </GlassCard>
+          )}
+        </GlassCard>
+      </motion.div>
 
       <DeployDialog
         model={deployModel}
         onClose={() => setDeployModel(null)}
       />
-    </div>
+    </motion.div>
   );
 }

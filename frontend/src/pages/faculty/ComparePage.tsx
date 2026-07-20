@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Check, Search, Users, X } from "lucide-react";
+import { Check, Search, Sparkles, Users, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import {
@@ -25,6 +25,19 @@ import type { StudentCompareItem, StudentListItem } from "@/types";
 
 const MIN_SELECTION = 2;
 const MAX_SELECTION = 4;
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06, delayChildren: 0.04 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.25 } },
+};
 
 /** Debounce a rapidly-changing value (e.g. a search box). */
 function useDebouncedValue<T>(value: T, delayMs: number): T {
@@ -175,16 +188,25 @@ export default function FacultyComparePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title="Compare Students"
         description={`Select ${MIN_SELECTION}–${MAX_SELECTION} students to compare their skills and readiness side by side.`}
       />
 
-      <GlassCard className="p-5">
+      <GlassCard className="p-6">
+        <div className="mb-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Step 1
+          </p>
+          <h2 className="text-base font-bold tracking-tight">
+            Choose your cohort
+          </h2>
+        </div>
+
         <Label
           htmlFor="compare-search"
-          className="mb-1 block text-xs text-muted-foreground"
+          className="mb-1.5 block text-xs text-muted-foreground"
         >
           Find students
         </Label>
@@ -198,22 +220,32 @@ export default function FacultyComparePage() {
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder="Search by name or register number"
-            className="pl-9"
+            className="rounded-xl pl-9"
           />
         </div>
 
         {selected.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">
+              Comparing{" "}
+              <span className="tabular-nums text-foreground">
+                {selected.length}
+              </span>
+              /{MAX_SELECTION}
+            </span>
             {selected.map((student) => (
               <button
                 key={student.id}
                 type="button"
                 onClick={() => toggle(student)}
-                className="inline-flex items-center gap-1.5 rounded-full border bg-card/60 py-1 pl-3 pr-2 text-sm transition-colors hover:bg-accent"
+                className="group inline-flex items-center gap-1.5 rounded-full border bg-card/60 py-1 pl-3 pr-2 text-sm shadow-sm transition-colors hover:border-destructive/40 hover:bg-destructive/10"
                 aria-label={`Remove ${student.full_name}`}
               >
                 {student.full_name}
-                <X className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                <X
+                  className="h-3.5 w-3.5 text-muted-foreground transition-colors group-hover:text-destructive"
+                  aria-hidden="true"
+                />
               </button>
             ))}
           </div>
@@ -225,11 +257,11 @@ export default function FacultyComparePage() {
           ) : searchQuery.isError ? (
             <ErrorState onRetry={() => void searchQuery.refetch()} />
           ) : (searchQuery.data?.items.length ?? 0) === 0 ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">
+            <p className="py-6 text-center text-sm text-muted-foreground">
               No students match your search.
             </p>
           ) : (
-            <ul className="divide-y rounded-xl border">
+            <ul className="divide-y overflow-hidden rounded-2xl border">
               {searchQuery.data?.items.map((student) => {
                 const isSelected = selectedIds.includes(student.id);
                 const atLimit = selected.length >= MAX_SELECTION;
@@ -240,9 +272,12 @@ export default function FacultyComparePage() {
                       type="button"
                       onClick={() => toggle(student)}
                       disabled={disabled}
+                      aria-pressed={isSelected}
                       className={cn(
-                        "flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors",
-                        isSelected ? "bg-accent/60" : "hover:bg-accent/40",
+                        "flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-colors",
+                        isSelected
+                          ? "bg-primary/10"
+                          : "hover:bg-accent/40",
                         disabled && "cursor-not-allowed opacity-50",
                       )}
                     >
@@ -255,12 +290,17 @@ export default function FacultyComparePage() {
                           {student.batch}
                         </span>
                       </span>
-                      {isSelected && (
-                        <Check
-                          className="h-4 w-4 shrink-0 text-primary"
-                          aria-hidden="true"
-                        />
-                      )}
+                      <span
+                        className={cn(
+                          "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors",
+                          isSelected
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border",
+                        )}
+                        aria-hidden="true"
+                      >
+                        {isSelected && <Check className="h-3.5 w-3.5" />}
+                      </span>
                     </button>
                   </li>
                 );
@@ -271,7 +311,7 @@ export default function FacultyComparePage() {
       </GlassCard>
 
       {selected.length < MIN_SELECTION ? (
-        <GlassCard className="p-5">
+        <GlassCard className="p-6">
           <EmptyState
             icon={Users}
             title="Pick at least two students"
@@ -284,104 +324,145 @@ export default function FacultyComparePage() {
         <ErrorState onRetry={() => void compareQuery.refetch()} />
       ) : compared.length >= MIN_SELECTION ? (
         <motion.div
-          className="space-y-6"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
+          className="space-y-8"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
         >
-          <GlassCard className="p-5">
-            <h2 className="mb-1 text-sm font-semibold">Skill Overlay</h2>
-            <p className="mb-2 text-xs text-muted-foreground">
-              Each series is one student across the five tracked skills (0–100).
-            </p>
-            <SkillRadarChart data={radarData} series={radarSeries} height={320} />
-          </GlassCard>
+          <motion.section variants={containerVariants} className="space-y-4">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Step 2 · Skill overlay
+              </p>
+              <h2 className="text-lg font-bold tracking-tight">
+                Where they align, where they differ
+              </h2>
+            </div>
+            <motion.div variants={itemVariants} whileHover={{ y: -2 }}>
+              <div className="gradient-border p-6 transition-shadow hover:shadow-[var(--shadow-lg)]">
+                <div className="mb-3 flex items-center gap-2">
+                  <Sparkles
+                    className="h-4 w-4 text-electric"
+                    aria-hidden="true"
+                  />
+                  <h3 className="text-sm font-semibold">Skill Overlay</h3>
+                </div>
+                <p className="mb-2 text-xs text-muted-foreground">
+                  Each series is one student across the five tracked skills
+                  (0–100).
+                </p>
+                <SkillRadarChart
+                  data={radarData}
+                  series={radarSeries}
+                  height={320}
+                />
+              </div>
+            </motion.div>
+          </motion.section>
 
-          <GlassCard className="overflow-hidden p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/40">
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                      Metric
-                    </th>
-                    {compared.map((student, index) => (
-                      <th
-                        key={student.id}
-                        className="px-4 py-3 text-left font-medium"
-                      >
-                        <span className="flex items-center gap-2">
-                          <span
-                            className="h-2.5 w-2.5 rounded-[3px]"
-                            style={{
-                              backgroundColor:
-                                colors.categorical[
-                                  index % colors.categorical.length
-                                ],
-                            }}
-                            aria-hidden="true"
-                          />
-                          <span className="min-w-0">
-                            <span className="block truncate">
-                              {student.full_name}
-                            </span>
-                            <span className="block truncate text-xs font-normal text-muted-foreground">
-                              {student.register_number}
-                            </span>
-                          </span>
-                        </span>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b">
-                    <td className="px-4 py-3 font-medium text-muted-foreground">
-                      Risk
-                    </td>
-                    {compared.map((student) => (
-                      <td key={student.id} className="px-4 py-3">
-                        {student.risk_level ? (
-                          <RiskBadge level={student.risk_level} />
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                  {COMPARE_ROWS.map((row) => {
-                    const best = bestIndex(row);
-                    return (
-                      <tr key={row.label} className="border-b last:border-0">
-                        <td className="px-4 py-3 font-medium text-muted-foreground">
-                          {row.label}
-                        </td>
+          <motion.section variants={containerVariants} className="space-y-4">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Step 3 · Metric breakdown
+              </p>
+              <h2 className="text-lg font-bold tracking-tight">
+                Side-by-side scorecard
+              </h2>
+            </div>
+            <motion.div variants={itemVariants}>
+              <GlassCard className="overflow-hidden p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/40">
+                        <th className="px-4 py-3.5 text-left font-medium text-muted-foreground">
+                          Metric
+                        </th>
                         {compared.map((student, index) => (
-                          <td
+                          <th
                             key={student.id}
-                            className={cn(
-                              "px-4 py-3 tabular-nums",
-                              best === index &&
-                                "font-semibold text-primary",
-                            )}
+                            className="px-4 py-3.5 text-left font-medium"
                           >
-                            <span className="inline-flex items-center gap-1.5">
-                              {row.format(row.get(student))}
-                              {best === index && (
-                                <Badge variant="success" className="px-1.5 py-0">
-                                  Best
-                                </Badge>
-                              )}
+                            <span className="flex items-center gap-2">
+                              <span
+                                className="h-2.5 w-2.5 shrink-0 rounded-[3px]"
+                                style={{
+                                  backgroundColor:
+                                    colors.categorical[
+                                      index % colors.categorical.length
+                                    ],
+                                }}
+                                aria-hidden="true"
+                              />
+                              <span className="min-w-0">
+                                <span className="block truncate">
+                                  {student.full_name}
+                                </span>
+                                <span className="block truncate text-xs font-normal text-muted-foreground">
+                                  {student.register_number}
+                                </span>
+                              </span>
                             </span>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b">
+                        <td className="px-4 py-3 font-medium text-muted-foreground">
+                          Risk
+                        </td>
+                        {compared.map((student) => (
+                          <td key={student.id} className="px-4 py-3">
+                            {student.risk_level ? (
+                              <RiskBadge level={student.risk_level} />
+                            ) : (
+                              "—"
+                            )}
                           </td>
                         ))}
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </GlassCard>
+                      {COMPARE_ROWS.map((row) => {
+                        const best = bestIndex(row);
+                        return (
+                          <tr
+                            key={row.label}
+                            className="border-b transition-colors last:border-0 hover:bg-muted/30"
+                          >
+                            <td className="px-4 py-3 font-medium text-muted-foreground">
+                              {row.label}
+                            </td>
+                            {compared.map((student, index) => (
+                              <td
+                                key={student.id}
+                                className={cn(
+                                  "px-4 py-3 tabular-nums",
+                                  best === index &&
+                                    "bg-success/5 font-semibold text-foreground",
+                                )}
+                              >
+                                <span className="inline-flex items-center gap-1.5">
+                                  {row.format(row.get(student))}
+                                  {best === index && (
+                                    <Badge
+                                      variant="success"
+                                      className="px-1.5 py-0"
+                                    >
+                                      Best
+                                    </Badge>
+                                  )}
+                                </span>
+                              </td>
+                            ))}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </GlassCard>
+            </motion.div>
+          </motion.section>
         </motion.div>
       ) : null}
     </div>

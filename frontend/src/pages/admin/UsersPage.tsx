@@ -75,6 +75,19 @@ const ROLE_BADGE_VARIANT: Record<
   student: "secondary",
 };
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06, delayChildren: 0.04 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.25 } },
+};
+
 // ---------------------------------------------------------------------------
 // Form schemas
 // ---------------------------------------------------------------------------
@@ -176,7 +189,10 @@ function CreateUserDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create user</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <UserPlus className="h-4 w-4 text-primary" aria-hidden="true" />
+            Create user
+          </DialogTitle>
           <DialogDescription>
             Add a new account. The user can sign in immediately with these
             credentials.
@@ -324,7 +340,10 @@ function EditUserDialog({
     <Dialog open={Boolean(user)} onOpenChange={(next) => !next && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit user</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Pencil className="h-4 w-4 text-primary" aria-hidden="true" />
+            Edit user
+          </DialogTitle>
           <DialogDescription>
             {user?.email} · leave the password blank to keep it unchanged.
           </DialogDescription>
@@ -459,7 +478,11 @@ function ToggleActiveDialog({
     <Dialog open={Boolean(user)} onOpenChange={(next) => !next && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle
+            className={
+              willActivate ? "text-success" : "text-destructive"
+            }
+          >
             {willActivate ? "Activate user" : "Deactivate user"}
           </DialogTitle>
           <DialogDescription>
@@ -602,12 +625,15 @@ export default function AdminUsersPage() {
         }
       />
 
-      <GlassCard className="p-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <GlassCard className="p-5">
+        <p className="mb-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          Filter directory
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="sm:col-span-2 lg:col-span-2">
             <Label
               htmlFor="user-search"
-              className="mb-1 block text-xs text-muted-foreground"
+              className="mb-1.5 block text-xs text-muted-foreground"
             >
               Search
             </Label>
@@ -620,13 +646,13 @@ export default function AdminUsersPage() {
                 id="user-search"
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
-                placeholder="Name or email"
+                placeholder="Search by name or email…"
                 className="pl-9"
               />
             </div>
           </div>
           <div>
-            <Label className="mb-1 block text-xs text-muted-foreground">
+            <Label className="mb-1.5 block text-xs text-muted-foreground">
               Role
             </Label>
             <Select value={roleFilter} onValueChange={setRoleFilter}>
@@ -652,19 +678,24 @@ export default function AdminUsersPage() {
         <ErrorState onRetry={() => void query.refetch()} />
       ) : query.data ? (
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
           className="space-y-4"
         >
-          <DataTable
-            columns={columns}
-            data={query.data.items}
-            rowKey={(row) => row.id}
-            emptyMessage="No users match these filters"
-          />
+          <motion.div variants={itemVariants}>
+            <DataTable
+              columns={columns}
+              data={query.data.items}
+              rowKey={(row) => row.id}
+              emptyMessage="No users match these filters"
+            />
+          </motion.div>
 
-          <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+          <motion.div
+            variants={itemVariants}
+            className="flex flex-col items-center justify-between gap-3 sm:flex-row"
+          >
             <p className="text-sm text-muted-foreground">
               {total === 0
                 ? "No results"
@@ -695,7 +726,7 @@ export default function AdminUsersPage() {
                 <ChevronRight aria-hidden="true" />
               </Button>
             </div>
-          </div>
+          </motion.div>
         </motion.div>
       ) : null}
 

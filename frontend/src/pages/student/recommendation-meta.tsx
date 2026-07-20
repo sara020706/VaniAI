@@ -59,17 +59,17 @@ export const PRIORITY_META: Record<Priority, PriorityMeta> = {
   high: {
     label: "High priority",
     badgeVariant: "danger",
-    accentClass: "bg-red-500",
+    accentClass: "bg-destructive",
   },
   medium: {
     label: "Medium priority",
     badgeVariant: "warning",
-    accentClass: "bg-amber-500",
+    accentClass: "bg-warning",
   },
   low: {
     label: "Low priority",
     badgeVariant: "success",
-    accentClass: "bg-green-500",
+    accentClass: "bg-success",
   },
 };
 

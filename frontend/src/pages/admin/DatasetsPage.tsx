@@ -18,7 +18,6 @@ import { z } from "zod";
 import {
   DataTable,
   ErrorState,
-  GlassCard,
   LoadingState,
   PageHeader,
   type DataTableColumn,
@@ -43,6 +42,19 @@ import { adminKeys, useDatasets } from "@/pages/admin/use-admin";
 
 const PAGE_SIZE = 20;
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20 MB
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06, delayChildren: 0.04 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.25 } },
+};
 
 // ---------------------------------------------------------------------------
 // Upload form
@@ -122,14 +134,24 @@ function UploadCard() {
   );
 
   return (
-    <GlassCard className="p-5">
-      <div className="mb-4 flex items-center gap-2">
-        <FileUp className="h-5 w-5 text-primary" aria-hidden="true" />
-        <h2 className="text-base font-semibold">Upload training dataset</h2>
-      </div>
-      <form
-        className="space-y-4"
-        onSubmit={handleSubmit((values) => {
+    <div className="gradient-border h-full">
+      <div className="surface-card h-full p-6">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="gradient-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-md">
+            <FileUp className="h-5 w-5" aria-hidden="true" />
+          </div>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              New dataset
+            </p>
+            <h2 className="text-base font-bold tracking-tight">
+              Upload training data
+            </h2>
+          </div>
+        </div>
+        <form
+          className="space-y-5"
+          onSubmit={handleSubmit((values) => {
           if (!file) {
             toast.error("Choose a CSV file to upload first.");
             return;
@@ -159,14 +181,14 @@ function UploadCard() {
           onDragLeave={() => setIsDragging(false)}
           onDrop={onDrop}
           className={cn(
-            "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-6 py-10 text-center transition-colors",
+            "flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-10 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
             isDragging
-              ? "border-primary bg-primary/5"
-              : "border-border bg-card/40 hover:border-primary/60",
+              ? "border-primary bg-primary/5 shadow-glow"
+              : "grid-backdrop border-border/70 hover:border-primary/60 hover:bg-primary/[0.03]",
           )}
         >
-          <div className="gradient-primary flex h-12 w-12 items-center justify-center rounded-xl text-white shadow-md">
-            <UploadCloud className="h-6 w-6" aria-hidden="true" />
+          <div className="gradient-primary flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-md">
+            <UploadCloud className="h-7 w-7" aria-hidden="true" />
           </div>
           {file ? (
             <div className="min-w-0">
@@ -226,9 +248,10 @@ function UploadCard() {
             )}
             Upload &amp; validate
           </Button>
-        </div>
-      </form>
-    </GlassCard>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
 
@@ -269,7 +292,7 @@ function ValidationErrorsDialog({
             {errors.map((message, index) => (
               <li
                 key={index}
-                className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200"
+                className="flex items-start gap-2 rounded-xl border border-destructive/25 bg-destructive/10 px-3 py-2 text-sm text-destructive"
               >
                 <AlertCircle
                   className="mt-0.5 h-4 w-4 shrink-0"
@@ -389,16 +412,31 @@ export default function AdminDatasetsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title="Datasets"
         description="Upload training data, review validation results, and launch model training."
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-        <UploadCard />
+      <motion.div
+        className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)]"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div variants={itemVariants}>
+          <UploadCard />
+        </motion.div>
 
-        <div className="space-y-4">
+        <motion.div variants={itemVariants} className="space-y-4">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Training library
+            </p>
+            <h2 className="text-lg font-bold tracking-tight">
+              Uploaded datasets
+            </h2>
+          </div>
           {query.isLoading ? (
             <LoadingState label="Loading datasets…" />
           ) : query.isError ? (
@@ -410,12 +448,14 @@ export default function AdminDatasetsPage() {
               transition={{ duration: 0.25 }}
               className="space-y-4"
             >
-              <DataTable
-                columns={columns}
-                data={query.data.items}
-                rowKey={(row) => row.id}
-                emptyMessage="No datasets uploaded yet"
-              />
+              <div className="surface-card overflow-hidden p-2">
+                <DataTable
+                  columns={columns}
+                  data={query.data.items}
+                  rowKey={(row) => row.id}
+                  emptyMessage="No datasets uploaded yet"
+                />
+              </div>
 
               <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
                 <p className="text-sm text-muted-foreground">
@@ -453,8 +493,8 @@ export default function AdminDatasetsPage() {
               </div>
             </motion.div>
           ) : null}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       <ValidationErrorsDialog
         dataset={errorsDataset}
