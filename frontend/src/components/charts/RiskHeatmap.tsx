@@ -6,7 +6,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { readableTextColor, useChartColors } from "@/lib/chart-colors";
+import { readableTextColor } from "@/lib/chart-colors";
 import { DEPARTMENTS } from "@/lib/constants";
 
 export interface RiskHeatmapDatum {
@@ -22,13 +22,34 @@ export interface RiskHeatmapProps {
 }
 
 /**
+ * Teal sequential ramp (low → high share), light → deep. Local to the heatmap
+ * so magnitude reads in the brand teal rather than the shared blue ramp.
+ */
+const TEAL_RAMP: readonly string[] = [
+  "#e0f2ee",
+  "#b7e2d8",
+  "#84cbbc",
+  "#4fae9c",
+  "#2b8f7d",
+  "#186f62",
+  "#0c4f47",
+];
+
+function tealAt(share: number): string {
+  const clamped = Math.min(1, Math.max(0, share));
+  const index = Math.min(
+    TEAL_RAMP.length - 1,
+    Math.floor(clamped * TEAL_RAMP.length),
+  );
+  return TEAL_RAMP[index];
+}
+
+/**
  * Department × batch heatmap (CSS grid). Cell color maps the high-risk share
  * onto the sequential ramp; in-cell counts switch between white and ink by
  * background luminance; each populated cell carries a tooltip.
  */
 export function RiskHeatmap({ data, height = 280 }: RiskHeatmapProps) {
-  const colors = useChartColors();
-
   const { departments, batches, cellIndex } = useMemo(() => {
     const presentDepartments = new Set(data.map((cell) => cell.department));
     const orderedKnown = DEPARTMENTS.filter((department) =>
@@ -84,7 +105,7 @@ export function RiskHeatmap({ data, height = 280 }: RiskHeatmapProps) {
               department={department}
               batches={batches}
               cellIndex={cellIndex}
-              sequentialAt={colors.sequentialAt}
+              sequentialAt={tealAt}
             />
           ))}
         </div>
@@ -92,8 +113,8 @@ export function RiskHeatmap({ data, height = 280 }: RiskHeatmapProps) {
         {/* Ramp legend — share of high-risk students */}
         <div className="mt-3 flex items-center justify-end gap-2 text-xs text-muted-foreground">
           <span>0%</span>
-          <div className="flex overflow-hidden rounded-sm">
-            {colors.sequential.map((step) => (
+          <div className="flex overflow-hidden rounded-full ring-1 ring-border/60">
+            {TEAL_RAMP.map((step) => (
               <span
                 key={step}
                 className="h-2.5 w-5"
@@ -133,7 +154,7 @@ function DepartmentRow({
           return (
             <div
               key={batch}
-              className="flex h-10 items-center justify-center rounded-md bg-muted/50 text-xs text-muted-foreground"
+              className="flex h-10 items-center justify-center rounded-lg bg-muted/40 text-xs text-muted-foreground"
               aria-label={`${department} ${batch}: no students`}
             >
               —
@@ -147,7 +168,7 @@ function DepartmentRow({
           <Tooltip key={batch}>
             <TooltipTrigger asChild>
               <div
-                className="flex h-10 cursor-default items-center justify-center rounded-md text-xs font-semibold tabular-nums transition-transform hover:scale-[1.04]"
+                className="flex h-10 cursor-default items-center justify-center rounded-lg text-xs font-semibold tabular-nums shadow-sm ring-1 ring-inset ring-black/5 transition-transform duration-200 hover:scale-[1.04] hover:shadow-md"
                 style={{ backgroundColor: background, color: ink }}
                 tabIndex={0}
               >

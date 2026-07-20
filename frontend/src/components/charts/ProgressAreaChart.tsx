@@ -41,6 +41,24 @@ export function ProgressAreaChart({
     <div className="w-full">
       <ResponsiveContainer width="100%" height={height}>
         <AreaChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+          <defs>
+            {series.map((entry, index) => {
+              const color = colors.categorical[index % colors.categorical.length];
+              return (
+                <linearGradient
+                  key={entry.key}
+                  id={`area-fill-${entry.key}`}
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop offset="0%" stopColor={color} stopOpacity={0.28} />
+                  <stop offset="100%" stopColor={color} stopOpacity={0} />
+                </linearGradient>
+              );
+            })}
+          </defs>
           <CartesianGrid stroke={colors.grid} strokeWidth={1} vertical={false} />
           <XAxis
             dataKey={xKey}
@@ -69,9 +87,8 @@ export function ProgressAreaChart({
                 name={entry.name}
                 stroke={color}
                 strokeWidth={2}
-                fill={color}
-                fillOpacity={0.1}
-                dot={{ r: 4, fill: color, stroke: colors.surface, strokeWidth: 2 }}
+                fill={`url(#area-fill-${entry.key})`}
+                dot={false}
                 activeDot={{
                   r: 5,
                   fill: color,
@@ -79,6 +96,9 @@ export function ProgressAreaChart({
                   strokeWidth: 2,
                 }}
                 connectNulls
+                isAnimationActive
+                animationDuration={600}
+                animationEasing="ease-out"
               />
             );
           })}

@@ -1,5 +1,15 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Loader2, LogIn, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Loader2,
+  Lock,
+  LogIn,
+  Mail,
+  Sparkles,
+} from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
@@ -17,7 +27,17 @@ import {
   ROLE_HOME_ROUTES,
   ROLE_LABELS,
 } from "@/lib/constants";
-import { getApiErrorMessage } from "@/lib/utils";
+import { cn, getApiErrorMessage } from "@/lib/utils";
+
+const fieldStagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.05 } },
+};
+
+const fieldItem = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+};
 
 const loginSchema = z.object({
   email: z
@@ -89,40 +109,64 @@ function LoginPage() {
         </p>
       }
     >
-      <form onSubmit={(event) => void onSubmit(event)} className="space-y-4" noValidate>
-        <div className="space-y-1.5">
+      <motion.form
+        onSubmit={(event) => void onSubmit(event)}
+        className="space-y-5"
+        noValidate
+        variants={fieldStagger}
+        initial="hidden"
+        animate="show"
+      >
+        <motion.div variants={fieldItem} className="space-y-1.5">
           <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            placeholder="you@vaniai.io"
-            aria-invalid={Boolean(errors.email)}
-            {...register("email")}
-          />
+          <div className="group relative">
+            <Mail
+              className="pointer-events-none absolute inset-y-0 left-3 my-auto h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary"
+              aria-hidden="true"
+            />
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@vaniai.io"
+              aria-invalid={Boolean(errors.email)}
+              className={cn(
+                "h-11 rounded-xl pl-10 shadow-sm transition-shadow focus-visible:shadow-glow",
+                errors.email && "border-destructive/60",
+              )}
+              {...register("email")}
+            />
+          </div>
           {errors.email && (
             <p className="text-xs font-medium text-destructive" role="alert">
               {errors.email.message}
             </p>
           )}
-        </div>
+        </motion.div>
 
-        <div className="space-y-1.5">
+        <motion.div variants={fieldItem} className="space-y-1.5">
           <Label htmlFor="password">Password</Label>
-          <div className="relative">
+          <div className="group relative">
+            <Lock
+              className="pointer-events-none absolute inset-y-0 left-3 my-auto h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary"
+              aria-hidden="true"
+            />
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
               placeholder="••••••••"
-              className="pr-10"
+              className={cn(
+                "h-11 rounded-xl pl-10 pr-10 shadow-sm transition-shadow focus-visible:shadow-glow",
+                errors.password && "border-destructive/60",
+              )}
               aria-invalid={Boolean(errors.password)}
               {...register("password")}
             />
             <button
               type="button"
               onClick={() => setShowPassword((previous) => !previous)}
-              className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+              className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-xl text-muted-foreground transition-colors hover:text-foreground"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? (
@@ -137,44 +181,55 @@ function LoginPage() {
               {errors.password.message}
             </p>
           )}
-        </div>
+        </motion.div>
 
-        <Button
-          type="submit"
-          variant="gradient"
-          className="w-full"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <Loader2 className="animate-spin" aria-hidden="true" />
-          ) : (
-            <LogIn aria-hidden="true" />
-          )}
-          {isSubmitting ? "Signing in…" : "Sign in"}
-        </Button>
-      </form>
+        <motion.div variants={fieldItem}>
+          <Button
+            type="submit"
+            variant="gradient"
+            className="h-11 w-full rounded-xl text-sm font-semibold"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <Loader2 className="animate-spin" aria-hidden="true" />
+            ) : (
+              <LogIn aria-hidden="true" />
+            )}
+            {isSubmitting ? "Signing in…" : "Sign in"}
+          </Button>
+        </motion.div>
+      </motion.form>
 
-      <Separator className="my-5" />
+      <Separator className="my-6" />
 
       {/* Demo credentials hint — the four accounts created by seed.py */}
-      <div className="rounded-xl border border-dashed bg-muted/40 p-3">
-        <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+      <div className="gradient-border rounded-2xl p-4">
+        <p className="mb-3 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
           <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-          Demo accounts — click to autofill
+          Demo accounts — tap to autofill
         </p>
-        <div className="space-y-1">
+        <div className="grid gap-1.5">
           {DEMO_ACCOUNTS.map((account) => (
-            <button
+            <motion.button
               key={account.email}
               type="button"
               onClick={() => fillDemoAccount(account.email, account.password)}
-              className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-colors hover:bg-accent"
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.2 }}
+              className="group flex w-full items-center justify-between gap-3 rounded-xl border border-border/60 bg-card/60 px-3 py-2 text-left transition-colors hover:border-primary/40 hover:bg-accent"
             >
-              <span className="font-medium">{ROLE_LABELS[account.role]}</span>
-              <span className="truncate font-mono text-muted-foreground">
-                {account.email} / {account.password}
+              <span className="flex items-center gap-2 text-xs font-semibold">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary/70 transition-colors group-hover:bg-primary" />
+                {ROLE_LABELS[account.role]}
               </span>
-            </button>
+              <span className="flex items-center gap-1.5 truncate font-mono text-[11px] text-muted-foreground">
+                {account.email}
+                <ArrowRight
+                  className="h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                  aria-hidden="true"
+                />
+              </span>
+            </motion.button>
           ))}
         </div>
       </div>

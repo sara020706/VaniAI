@@ -20,18 +20,20 @@ export function ErrorState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-2 rounded-2xl border border-destructive/30 bg-destructive/5 px-6 py-12 text-center",
+        "flex flex-col items-center justify-center gap-3 rounded-3xl border border-border/70 bg-card/60 px-6 py-16 text-center",
         className,
       )}
       role="alert"
     >
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
-        <AlertCircle className="h-6 w-6 text-destructive" aria-hidden="true" />
+      <div className="flex h-16 w-16 items-center justify-center rounded-full border border-destructive/20 bg-destructive/10">
+        <AlertCircle className="h-7 w-7 text-destructive" aria-hidden="true" />
       </div>
-      <h3 className="mt-1 text-sm font-semibold">{title}</h3>
-      <p className="max-w-sm text-sm text-muted-foreground">{description}</p>
+      <h3 className="mt-1 text-base font-semibold tracking-tight">{title}</h3>
+      <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+        {description}
+      </p>
       {onRetry && (
-        <Button variant="outline" size="sm" className="mt-3" onClick={onRetry}>
+        <Button variant="outline" size="sm" className="mt-2" onClick={onRetry}>
           <RotateCcw aria-hidden="true" />
           Try again
         </Button>

@@ -62,12 +62,23 @@ export function DataTable<T>({
   }
 
   return (
-    <div className={cn("rounded-xl border", className)}>
+    <div
+      className={cn(
+        "surface-card overflow-hidden p-0",
+        className,
+      )}
+    >
       <Table>
         <TableHeader>
-          <TableRow className="hover:bg-transparent">
+          <TableRow className="border-b border-border/70 bg-muted/40 hover:bg-muted/40">
             {columns.map((column) => (
-              <TableHead key={column.key} className={column.className}>
+              <TableHead
+                key={column.key}
+                className={cn(
+                  "sticky top-0 z-10 h-11 bg-muted/40 px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground backdrop-blur",
+                  column.className,
+                )}
+              >
                 {column.header}
               </TableHead>
             ))}
@@ -77,7 +88,11 @@ export function DataTable<T>({
           {data.map((row, index) => (
             <TableRow
               key={rowKey ? rowKey(row, index) : index}
-              className={cn(onRowClick && "cursor-pointer")}
+              className={cn(
+                "border-b border-border/50 transition-colors last:border-0 hover:bg-primary/[0.04]",
+                onRowClick &&
+                  "cursor-pointer focus-visible:bg-primary/[0.06] focus-visible:outline-none",
+              )}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
               onKeyDown={
                 onRowClick
@@ -93,7 +108,10 @@ export function DataTable<T>({
               role={onRowClick ? "button" : undefined}
             >
               {columns.map((column) => (
-                <TableCell key={column.key} className={column.className}>
+                <TableCell
+                  key={column.key}
+                  className={cn("px-4 py-3.5", column.className)}
+                >
                   {column.render ? column.render(row) : defaultCell(row, column.key)}
                 </TableCell>
               ))}

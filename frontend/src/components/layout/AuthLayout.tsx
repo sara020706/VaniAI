@@ -29,29 +29,38 @@ export function AuthLayout({
         aria-hidden="true"
       />
       <div
-        className="animate-float-blob pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-blue-400/20 blur-3xl"
+        className="animate-float-blob pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-teal-300/25 blur-3xl"
         style={{ animationDelay: "-8s" }}
+        aria-hidden="true"
+      />
+      {/* Fine dotted texture for depth */}
+      <div
+        className="grid-backdrop pointer-events-none absolute inset-0 opacity-[0.15]"
         aria-hidden="true"
       />
 
       <div className="relative z-10 w-full max-w-md">
-        <div className="mb-6 flex flex-col items-center gap-2 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-white shadow-lg backdrop-blur-md">
+        <div className="mb-7 flex flex-col items-center gap-3 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/25 bg-white/15 text-white shadow-lg backdrop-blur-md">
             <GraduationCap className="h-8 w-8" aria-hidden="true" />
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">
-            VaniAI
-          </h1>
-          <p className="text-sm text-white/80">
-            AI-powered placement prediction &amp; career readiness
-          </p>
+          <div className="space-y-1.5">
+            <h1 className="text-3xl font-extrabold tracking-tight text-white">
+              VaniAI
+            </h1>
+            <p className="text-sm text-white/80">
+              AI-powered placement prediction &amp; career readiness
+            </p>
+          </div>
         </div>
 
-        <GlassCard className="p-6 sm:p-8">
-          <div className="mb-5">
+        <GlassCard className="hero-sheen p-6 sm:p-8">
+          <div className="mb-6">
             <h2 className="text-xl font-bold tracking-tight">{title}</h2>
             {description && (
-              <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+              <p className="mt-1.5 text-sm text-muted-foreground">
+                {description}
+              </p>
             )}
           </div>
           {children}

@@ -59,6 +59,20 @@ export function FeatureImportanceChart({
           layout="vertical"
           margin={{ top: 8, right: 16, bottom: 0, left: 8 }}
         >
+          <defs>
+            <linearGradient id="feat-pos" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor={colors.positive} stopOpacity={0.6} />
+              <stop offset="100%" stopColor={colors.positive} stopOpacity={0.95} />
+            </linearGradient>
+            <linearGradient id="feat-neg" x1="1" y1="0" x2="0" y2="0">
+              <stop offset="0%" stopColor={colors.negative} stopOpacity={0.6} />
+              <stop offset="100%" stopColor={colors.negative} stopOpacity={0.95} />
+            </linearGradient>
+            <linearGradient id="feat-mag" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor={colors.categorical[0]} stopOpacity={0.6} />
+              <stop offset="100%" stopColor={colors.categorical[0]} stopOpacity={0.95} />
+            </linearGradient>
+          </defs>
           <CartesianGrid stroke={colors.grid} strokeWidth={1} horizontal={false} />
           <XAxis
             type="number"
@@ -93,8 +107,11 @@ export function FeatureImportanceChart({
           <Bar
             dataKey="value"
             name={signed ? "Impact" : "Importance"}
-            maxBarSize={24}
-            radius={[0, 4, 4, 0]}
+            maxBarSize={28}
+            radius={[0, 8, 8, 0]}
+            isAnimationActive
+            animationDuration={600}
+            animationEasing="ease-out"
           >
             {rows.map((row) => (
               <Cell
@@ -102,9 +119,9 @@ export function FeatureImportanceChart({
                 fill={
                   signed
                     ? row.value >= 0
-                      ? colors.positive
-                      : colors.negative
-                    : colors.categorical[0]
+                      ? "url(#feat-pos)"
+                      : "url(#feat-neg)"
+                    : "url(#feat-mag)"
                 }
               />
             ))}

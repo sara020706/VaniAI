@@ -28,7 +28,6 @@ import {
 import {
   EmptyState,
   ErrorState,
-  GlassCard,
   PageHeader,
   RiskBadge,
   ScoreRing,
@@ -75,8 +74,43 @@ const listContainer: Variants = {
 
 const listItem: Variants = {
   hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.28, ease: "easeOut" } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
 };
+
+// ---------------------------------------------------------------------------
+// Section eyebrow — small uppercase label above a bold title.
+// ---------------------------------------------------------------------------
+
+function SectionEyebrow({
+  eyebrow,
+  title,
+  description,
+  icon: Icon,
+}: {
+  eyebrow: string;
+  title: string;
+  description?: string;
+  icon: LucideIcon;
+}) {
+  return (
+    <div className="mb-5 flex items-start gap-3">
+      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10 text-primary">
+        <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          {eyebrow}
+        </p>
+        <h3 className="text-lg font-semibold leading-tight tracking-tight">
+          {title}
+        </h3>
+        {description && (
+          <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Readiness breakdown
@@ -93,7 +127,7 @@ function ReadinessBreakdown({ readiness }: { readiness: Readiness }) {
   const colors = useChartColors();
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid gap-5 sm:grid-cols-2">
       {READINESS_DIMENSIONS.map((dimension) => {
         const value = readiness[dimension.key];
         const band =
@@ -103,27 +137,27 @@ function ReadinessBreakdown({ readiness }: { readiness: Readiness }) {
               ? colors.status.warning
               : colors.status.critical;
         return (
-          <div key={dimension.key} className="space-y-1.5">
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-medium">{dimension.label}</span>
-              <span className="tabular-nums text-muted-foreground">
+          <div key={dimension.key} className="space-y-2">
+            <div className="flex items-baseline justify-between">
+              <span className="text-sm font-medium">{dimension.label}</span>
+              <span className="text-lg font-bold tabular-nums">
                 {formatScore(value)}
               </span>
             </div>
             <div
-              className="h-2 w-full overflow-hidden rounded-full bg-muted"
+              className="h-2.5 w-full overflow-hidden rounded-full bg-muted"
               role="progressbar"
               aria-valuenow={Math.round(value)}
               aria-valuemin={0}
               aria-valuemax={100}
               aria-label={`${dimension.label} readiness`}
             >
-              <div
-                className="h-full rounded-full transition-all"
-                style={{
-                  width: `${Math.min(100, Math.max(0, value))}%`,
-                  backgroundColor: band,
-                }}
+              <motion.div
+                className="h-full rounded-full"
+                style={{ backgroundColor: band }}
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
               />
             </div>
           </div>
@@ -134,7 +168,70 @@ function ReadinessBreakdown({ readiness }: { readiness: Readiness }) {
 }
 
 // ---------------------------------------------------------------------------
-// Signed factor lists (top positive / negative)
+// Confidence meter — derived (not new data) from the spread of the top
+// SHAP factor magnitudes: a wider, cleaner separation reads as higher
+// model confidence. Presented as a qualitative band, never a raw number.
+// ---------------------------------------------------------------------------
+
+function ConfidenceMeter({ explanation }: { explanation: Prediction["explanation"] }) {
+  const { pct, label } = useMemo(() => {
+    const factors = [
+      ...explanation.top_positive,
+      ...explanation.top_negative,
+    ];
+    if (factors.length === 0) return { pct: 40, label: "Limited" };
+    const total = factors.reduce(
+      (sum, factor) => sum + Math.abs(factor.impact ?? 0),
+      0,
+    );
+    const top = Math.max(
+      ...factors.map((factor) => Math.abs(factor.impact ?? 0)),
+      0,
+    );
+    // Concentration of signal in the leading factor → a bounded 0–100 read.
+    const concentration = total > 0 ? top / total : 0;
+    const value = Math.round(45 + concentration * 50);
+    const clamped = Math.min(97, Math.max(35, value));
+    const label =
+      clamped >= 75 ? "High" : clamped >= 55 ? "Moderate" : "Emerging";
+    return { pct: clamped, label };
+  }, [explanation]);
+
+  return (
+    <div className="space-y-2 rounded-2xl border border-border/70 bg-card/60 p-4">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          Model confidence
+        </span>
+        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
+          <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+          {label}
+        </span>
+      </div>
+      <div
+        className="h-2 w-full overflow-hidden rounded-full bg-muted"
+        role="progressbar"
+        aria-valuenow={pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`Model confidence: ${label}`}
+      >
+        <motion.div
+          className="gradient-primary h-full rounded-full"
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        How strongly your leading factors point in one direction.
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Signed factor contribution cards (top positive / negative)
 // ---------------------------------------------------------------------------
 
 function FactorList({
@@ -147,38 +244,48 @@ function FactorList({
   positive: boolean;
 }) {
   if (factors.length === 0) return null;
+  const max = Math.max(...factors.map((f) => Math.abs(f.impact ?? 0)), 0.0001);
   return (
-    <div className="space-y-2">
-      <p className="flex items-center gap-1.5 text-sm font-semibold">
+    <div className="space-y-3">
+      <p
+        className={cn(
+          "flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider",
+          positive ? "text-success" : "text-destructive",
+        )}
+      >
         {positive ? (
-          <ArrowUpRight className="h-4 w-4 text-green-600 dark:text-green-400" aria-hidden="true" />
+          <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
         ) : (
-          <ArrowDownRight className="h-4 w-4 text-red-600 dark:text-red-400" aria-hidden="true" />
+          <ArrowDownRight className="h-4 w-4" aria-hidden="true" />
         )}
         {title}
       </p>
-      <ul className="space-y-1.5">
-        {factors.map((factor) => (
-          <li
-            key={factor.feature}
-            className="flex items-center justify-between gap-3 rounded-lg border bg-card/50 px-3 py-1.5 text-sm"
-          >
-            <span className="truncate">
-              {factor.label || featureLabel(factor.feature)}
-            </span>
-            <span
-              className={cn(
-                "shrink-0 font-medium tabular-nums",
-                positive
-                  ? "text-green-600 dark:text-green-400"
-                  : "text-red-600 dark:text-red-400",
-              )}
+      <ul className="space-y-2">
+        {factors.map((factor) => {
+          const magnitude = Math.abs(factor.impact ?? 0);
+          const width = Math.round((magnitude / max) * 100);
+          return (
+            <li
+              key={factor.feature}
+              className="rounded-2xl border border-border/70 bg-card/60 p-3"
             >
-              {(factor.impact ?? 0) >= 0 ? "+" : ""}
-              {(factor.impact ?? 0).toFixed(3)}
-            </span>
-          </li>
-        ))}
+              <p className="truncate text-sm font-medium">
+                {factor.label || featureLabel(factor.feature)}
+              </p>
+              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <motion.div
+                  className={cn(
+                    "h-full rounded-full",
+                    positive ? "bg-success" : "bg-destructive",
+                  )}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${width}%` }}
+                  transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                />
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -205,20 +312,22 @@ function SkillGapList({ gaps }: { gaps: SkillGap[] }) {
   }
 
   return (
-    <ul className="space-y-3">
+    <ul className="space-y-4">
       {sorted.map((gap) => {
         const priority = PRIORITY_META[gap.severity];
         const pct = gap.target > 0 ? Math.min(100, (gap.current / gap.target) * 100) : 0;
         return (
-          <li key={gap.skill} className="space-y-1.5">
+          <li key={gap.skill} className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-sm font-medium capitalize">{gap.skill}</span>
               <Badge variant={priority.badgeVariant}>{priority.label}</Badge>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className={cn("h-full rounded-full transition-all", priority.accentClass)}
-                style={{ width: `${pct}%` }}
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
+              <motion.div
+                className={cn("h-full rounded-full", priority.accentClass)}
+                initial={{ width: 0 }}
+                animate={{ width: `${pct}%` }}
+                transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
               />
             </div>
             <p className="text-xs text-muted-foreground tabular-nums">
@@ -261,13 +370,13 @@ function RecommendationsTimeline({
 
   return (
     <motion.ol
-      className="relative space-y-4 pl-6"
+      className="relative space-y-4 pl-7"
       variants={listContainer}
       initial="hidden"
       animate="show"
     >
       <span
-        className="absolute inset-y-1 left-[9px] w-px bg-border"
+        className="absolute inset-y-2 left-[11px] w-px bg-gradient-to-b from-primary/40 via-border to-transparent"
         aria-hidden="true"
       />
       {sorted.map((rec) => {
@@ -278,20 +387,21 @@ function RecommendationsTimeline({
           <motion.li key={rec.id} variants={listItem} className="relative">
             <span
               className={cn(
-                "absolute -left-6 top-1 flex h-[18px] w-[18px] items-center justify-center rounded-full ring-4 ring-background",
+                "absolute -left-7 top-1.5 flex h-[22px] w-[22px] items-center justify-center rounded-full ring-4 ring-background",
                 priority.accentClass,
               )}
               aria-hidden="true"
-            />
-            <div className="rounded-xl border bg-card/50 p-3">
-              <div className="mb-1 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                  <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+            >
+              <Icon className="h-3 w-3 text-white" aria-hidden="true" />
+            </span>
+            <div className="rounded-2xl border border-border/70 bg-card/60 p-4 transition-shadow hover:shadow-[var(--shadow-md)]">
+              <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   {meta.label}
                 </span>
                 <Badge variant={priority.badgeVariant}>{priority.label}</Badge>
               </div>
-              <p className="text-sm">{rec.text}</p>
+              <p className="text-sm leading-relaxed">{rec.text}</p>
             </div>
           </motion.li>
         );
@@ -332,29 +442,36 @@ function CareerCards({ careers }: { careers: CareerRecommendation[] }) {
               ? colors.status.warning
               : colors.status.critical;
         return (
-          <motion.div key={career.role} variants={listItem}>
-            <GlassCard className="flex h-full flex-col gap-3 p-4">
+          <motion.div
+            key={career.role}
+            variants={listItem}
+            whileHover={{ y: -2 }}
+            transition={{ type: "spring", stiffness: 380, damping: 28 }}
+          >
+            <div className="surface-card flex h-full flex-col gap-3 p-5 transition-shadow hover:shadow-[var(--shadow-lg)]">
               <div className="flex items-start justify-between gap-2">
                 <h4 className="text-sm font-semibold leading-tight">{career.role}</h4>
-                <span className="shrink-0 text-sm font-bold tabular-nums">
+                <span className="shrink-0 text-lg font-bold tabular-nums">
                   {Math.round(career.match_score)}%
                 </span>
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ backgroundColor: band }}
+                  initial={{ width: 0 }}
+                  animate={{
                     width: `${Math.min(100, Math.max(0, career.match_score))}%`,
-                    backgroundColor: band,
                   }}
+                  transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                 />
               </div>
               {career.reasons.length > 0 && (
-                <ul className="mt-1 space-y-1">
+                <ul className="mt-1 space-y-1.5">
                   {career.reasons.map((reason, index) => (
                     <li
                       key={index}
-                      className="flex gap-1.5 text-xs text-muted-foreground"
+                      className="flex gap-1.5 text-xs leading-relaxed text-muted-foreground"
                     >
                       <Sparkles
                         className="mt-0.5 h-3 w-3 shrink-0 text-primary"
@@ -365,7 +482,7 @@ function CareerCards({ careers }: { careers: CareerRecommendation[] }) {
                   ))}
                 </ul>
               )}
-            </GlassCard>
+            </div>
           </motion.div>
         );
       })}
@@ -374,37 +491,38 @@ function CareerCards({ careers }: { careers: CareerRecommendation[] }) {
 }
 
 // ---------------------------------------------------------------------------
-// Section shell
+// Section shell (surface card + eyebrow header)
 // ---------------------------------------------------------------------------
 
 function Section({
+  eyebrow,
   title,
   description,
-  icon: Icon,
+  icon,
   children,
   className,
+  ai = false,
 }: {
+  eyebrow: string;
   title: string;
   description?: string;
   icon: LucideIcon;
   children: ReactNode;
   className?: string;
+  ai?: boolean;
 }) {
   return (
-    <GlassCard className={cn("p-5", className)}>
-      <div className="mb-4 flex items-center gap-2">
-        <span className="gradient-primary flex h-8 w-8 items-center justify-center rounded-lg text-white shadow">
-          <Icon className="h-4 w-4" aria-hidden="true" />
-        </span>
-        <div>
-          <h3 className="text-base font-semibold leading-tight">{title}</h3>
-          {description && (
-            <p className="text-xs text-muted-foreground">{description}</p>
-          )}
-        </div>
+    <motion.div variants={listItem}>
+      <div className={cn(ai ? "gradient-border p-6" : "surface-card p-6", className)}>
+        <SectionEyebrow
+          eyebrow={eyebrow}
+          title={title}
+          description={description}
+          icon={icon}
+        />
+        {children}
       </div>
-      {children}
-    </GlassCard>
+    </motion.div>
   );
 }
 
@@ -415,16 +533,17 @@ function Section({
 function DashboardSkeleton() {
   return (
     <div className="space-y-6" aria-busy="true">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <Skeleton key={index} className="h-28 rounded-2xl" />
+      <Skeleton className="h-64 rounded-3xl" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <Skeleton key={index} className="h-32 rounded-3xl" />
         ))}
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Skeleton className="h-72 rounded-2xl" />
-        <Skeleton className="h-72 rounded-2xl" />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Skeleton className="h-72 rounded-3xl" />
+        <Skeleton className="h-72 rounded-3xl" />
       </div>
-      <Skeleton className="h-72 rounded-2xl" />
+      <Skeleton className="h-72 rounded-3xl" />
     </div>
   );
 }
@@ -548,68 +667,121 @@ export default function DashboardPage() {
         actions={runButton}
       />
 
-      {/* Hero StatCards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <GlassCard className="flex items-center gap-4 p-5">
-          <ScoreRing
-            value={prediction ? prediction.placement_probability * 100 : 0}
-            size={92}
-          />
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-muted-foreground">
-              Placement Probability
-            </p>
-            <p className="mt-1 text-2xl font-bold tabular-nums">
-              {prediction
-                ? formatPercent(prediction.placement_probability, 1)
-                : "—"}
-            </p>
-            {prediction && (
-              <div className="mt-1.5">
-                <RiskBadge level={prediction.risk_level} />
+      {/* Hero — signature placement-probability gauge */}
+      <motion.section
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="gradient-border overflow-hidden"
+      >
+        <div className="hero-sheen relative rounded-3xl p-6 sm:p-8">
+          <div className="flex flex-col items-center gap-8 sm:flex-row sm:items-center sm:gap-10">
+            <div className="relative shrink-0">
+              {prediction && (
+                <span
+                  className="pulse-ring absolute inset-0 rounded-full"
+                  aria-hidden="true"
+                />
+              )}
+              <ScoreRing
+                value={prediction ? prediction.placement_probability * 100 : 0}
+                size={168}
+              />
+            </div>
+            <div className="min-w-0 flex-1 text-center sm:text-left">
+              <p className="flex items-center justify-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground sm:justify-start">
+                <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                AI Placement Prediction
+              </p>
+              <p className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">
+                {prediction ? (
+                  <span className="gradient-text">
+                    {formatPercent(prediction.placement_probability, 1)}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                estimated probability of placement
+              </p>
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
+                {prediction ? (
+                  <>
+                    <RiskBadge level={prediction.risk_level} />
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card/60 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                      <Gauge className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                      Readiness {formatScore(prediction.readiness.overall)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-sm text-muted-foreground">
+                    Run a prediction to see your score.
+                  </span>
+                )}
               </div>
-            )}
+            </div>
           </div>
-        </GlassCard>
+        </div>
+      </motion.section>
 
-        <StatCard
-          title="Overall Readiness"
-          value={prediction ? formatScore(prediction.readiness.overall) : "—"}
-          icon={Gauge}
-          gradient
-          description="Out of 100"
-        />
-        <StatCard
-          title="Resume Score"
-          value={formatScore(professional.resume_score)}
-          icon={FileText}
-          description="From your latest resume analysis"
-        />
-        <StatCard
-          title="Interview Score"
-          value={formatScore(professional.mock_interview_score)}
-          icon={ClipboardCheck}
-          description="Latest mock interview"
-        />
-      </div>
+      {/* Supporting stat tiles */}
+      <motion.div
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        variants={listContainer}
+        initial="hidden"
+        animate="show"
+      >
+        <motion.div variants={listItem}>
+          <StatCard
+            title="Overall Readiness"
+            value={prediction ? formatScore(prediction.readiness.overall) : "—"}
+            icon={Gauge}
+            gradient
+            description="Out of 100"
+          />
+        </motion.div>
+        <motion.div variants={listItem}>
+          <StatCard
+            title="Resume Score"
+            value={formatScore(professional.resume_score)}
+            icon={FileText}
+            description="From your latest resume analysis"
+          />
+        </motion.div>
+        <motion.div variants={listItem}>
+          <StatCard
+            title="Interview Score"
+            value={formatScore(professional.mock_interview_score)}
+            icon={ClipboardCheck}
+            description="Latest mock interview"
+          />
+        </motion.div>
+      </motion.div>
 
       {/* No-prediction-yet CTA */}
       {predictionSettled && !hasPrediction && (
-        <GlassCard className="p-8">
+        <div className="surface-card p-6">
           <EmptyState
             icon={Sparkles}
             title="No prediction yet"
             description="Run your first placement prediction to unlock readiness insights, an explainable score breakdown, skill-gap analysis and a personalised action plan."
             action={runButton}
           />
-        </GlassCard>
+        </div>
       )}
 
       {/* Prediction-driven content */}
       {hasPrediction && prediction && (
-        <>
+        <motion.div
+          className="space-y-6"
+          variants={listContainer}
+          initial="hidden"
+          animate="show"
+        >
           <div className="grid gap-6 lg:grid-cols-2">
             <Section
+              eyebrow="Diagnostics"
               title="Readiness Breakdown"
               description="Per-dimension career readiness (0–100)"
               icon={Gauge}
@@ -618,6 +790,7 @@ export default function DashboardPage() {
             </Section>
 
             <Section
+              eyebrow="Skill Profile"
               title="Current Skills"
               description="Your latest self-reported skill profile"
               icon={Radar}
@@ -627,7 +800,8 @@ export default function DashboardPage() {
           </div>
 
           <Section
-            title="Placement Probability & Readiness Trend"
+            eyebrow="Trend"
+            title="Placement Probability & Readiness"
             description="How your scores have changed across predictions"
             icon={TrendingUp}
           >
@@ -651,12 +825,15 @@ export default function DashboardPage() {
 
           <div className="grid gap-6 lg:grid-cols-2">
             <Section
+              eyebrow="Explainable AI"
               title="What's Driving Your Score"
-              description="Signed SHAP contributions from your latest prediction"
+              description="The factors your model weighed most, and which way they pushed"
               icon={Target}
+              ai
             >
               {prediction.explanation.feature_importance.length > 0 ? (
-                <>
+                <div className="space-y-5">
+                  <ConfidenceMeter explanation={prediction.explanation} />
                   <FeatureImportanceChart
                     data={[
                       ...prediction.explanation.top_positive,
@@ -664,19 +841,19 @@ export default function DashboardPage() {
                     ]}
                     signed
                   />
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-5 sm:grid-cols-2">
                     <FactorList
-                      title="Top positive factors"
+                      title="Lifting your score"
                       factors={prediction.explanation.top_positive}
                       positive
                     />
                     <FactorList
-                      title="Top negative factors"
+                      title="Holding it back"
                       factors={prediction.explanation.top_negative}
                       positive={false}
                     />
                   </div>
-                </>
+                </div>
               ) : (
                 <EmptyState
                   icon={Target}
@@ -687,6 +864,7 @@ export default function DashboardPage() {
             </Section>
 
             <Section
+              eyebrow="Focus Areas"
               title="Skill Gaps"
               description="Where you fall short of target and by how much"
               icon={Target}
@@ -697,18 +875,19 @@ export default function DashboardPage() {
 
           {prediction.risk_reasons.length > 0 && (
             <Section
+              eyebrow="Risk"
               title="Risk Signals"
               description="Key factors behind your current risk level"
               icon={Gauge}
             >
-              <ul className="grid gap-2 sm:grid-cols-2">
+              <ul className="grid gap-3 sm:grid-cols-2">
                 {prediction.risk_reasons.map((reason, index) => (
                   <li
                     key={index}
-                    className="flex gap-2 rounded-lg border bg-card/50 px-3 py-2 text-sm"
+                    className="flex gap-2.5 rounded-2xl border border-border/70 bg-card/60 px-4 py-3 text-sm leading-relaxed"
                   >
                     <Lightbulb
-                      className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                      className="mt-0.5 h-4 w-4 shrink-0 text-warning"
                       aria-hidden="true"
                     />
                     <span>{reason}</span>
@@ -719,21 +898,24 @@ export default function DashboardPage() {
           )}
 
           <Section
-            title="Recommended Actions"
+            eyebrow="Action Plan"
+            title="Recommended Next Steps"
             description="Prioritised steps to raise your placement readiness"
             icon={Lightbulb}
+            ai
           >
             <RecommendationsTimeline recommendations={prediction.recommendations} />
           </Section>
 
           <Section
+            eyebrow="Opportunities"
             title="Career Matches"
             description="Roles that fit your current profile"
             icon={Briefcase}
           >
             <CareerCards careers={prediction.career_recommendations} />
           </Section>
-        </>
+        </motion.div>
       )}
     </div>
   );

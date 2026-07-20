@@ -45,6 +45,24 @@ export function DistributionBarChart({
     <div className="w-full">
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+          <defs>
+            {data.map((bucket, index) => {
+              const fill = fillFor(index);
+              return (
+                <linearGradient
+                  key={bucket.bucket}
+                  id={`dist-bar-${index}`}
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop offset="0%" stopColor={fill} stopOpacity={0.95} />
+                  <stop offset="100%" stopColor={fill} stopOpacity={0.55} />
+                </linearGradient>
+              );
+            })}
+          </defs>
           <CartesianGrid stroke={colors.grid} strokeWidth={1} vertical={false} />
           <XAxis
             dataKey="bucket"
@@ -65,9 +83,17 @@ export function DistributionBarChart({
             content={<ChartTooltip />}
             cursor={{ fill: colors.grid, fillOpacity: 0.35 }}
           />
-          <Bar dataKey="count" name="Students" maxBarSize={24} radius={[4, 4, 0, 0]}>
+          <Bar
+            dataKey="count"
+            name="Students"
+            maxBarSize={28}
+            radius={[8, 8, 0, 0]}
+            isAnimationActive
+            animationDuration={600}
+            animationEasing="ease-out"
+          >
             {data.map((bucket, index) => (
-              <Cell key={bucket.bucket} fill={fillFor(index)} />
+              <Cell key={bucket.bucket} fill={`url(#dist-bar-${index})`} />
             ))}
           </Bar>
         </BarChart>

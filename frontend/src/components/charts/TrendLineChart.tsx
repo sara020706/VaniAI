@@ -71,7 +71,7 @@ export function TrendLineChart({
                 name={entry.name}
                 stroke={color}
                 strokeWidth={2}
-                dot={{ r: 4, fill: color, stroke: colors.surface, strokeWidth: 2 }}
+                dot={false}
                 activeDot={{
                   r: 5,
                   fill: color,
@@ -79,6 +79,9 @@ export function TrendLineChart({
                   strokeWidth: 2,
                 }}
                 connectNulls
+                isAnimationActive
+                animationDuration={600}
+                animationEasing="ease-out"
               />
             );
           })}

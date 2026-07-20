@@ -1,51 +1,93 @@
+@import url("https://rsms.me/inter/inter.css");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * VaniAI design system — "control room for a student's future".
+ * Cool graphite-slate neutrals; a deep teal→jade signature reserved for
+ * data & AI/prediction moments (deliberately NOT indigo/blue). Emerald/
+ * amber/rose reserved strictly for status. Premium radii + layered shadows.
+ * Tokens are HSL triples so Tailwind can alpha-composite them.
+ */
 @layer base {
   :root {
-    --background: 240 20% 99%;
-    --foreground: 224 71.4% 4.1%;
+    --background: 210 20% 98%;
+    --surface: 0 0% 100%;
+    --foreground: 209 34% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 224 71.4% 4.1%;
+    --card-foreground: 209 34% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71.4% 4.1%;
-    --primary: 262 83% 58%;
-    --primary-foreground: 210 20% 98%;
-    --secondary: 220 14.3% 95.9%;
-    --secondary-foreground: 220.9 39.3% 11%;
-    --muted: 220 14.3% 95.9%;
-    --muted-foreground: 220 8.9% 46.1%;
-    --accent: 250 60% 96%;
-    --accent-foreground: 220.9 39.3% 11%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 20% 98%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 262 83% 58%;
-    --radius: 0.75rem;
+    --popover-foreground: 209 34% 12%;
+
+    /* Deep teal primary */
+    --primary: 176 78% 26%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Jade / signal-teal — data & AI accents only */
+    --electric: 173 80% 36%;
+    --cyan: 168 84% 42%;
+
+    --secondary: 208 22% 95%;
+    --secondary-foreground: 209 28% 22%;
+    --muted: 208 22% 95%;
+    --muted-foreground: 209 12% 42%;
+    --accent: 174 55% 94%;
+    --accent-foreground: 176 70% 22%;
+
+    /* Status — reserved, never decorative */
+    --success: 152 62% 36%;
+    --warning: 40 92% 46%;
+    --destructive: 353 78% 54%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 209 20% 90%;
+    --input: 209 20% 88%;
+    --ring: 176 78% 30%;
+    --radius: 1.25rem;
+
+    /* Layered premium shadows (cool slate-tinted) */
+    --shadow-sm: 0 1px 2px 0 hsl(209 34% 12% / 0.04);
+    --shadow-md: 0 4px 16px -4px hsl(209 34% 12% / 0.08), 0 2px 6px -2px hsl(209 34% 12% / 0.05);
+    --shadow-lg: 0 18px 48px -12px hsl(190 50% 18% / 0.18), 0 6px 16px -8px hsl(209 34% 12% / 0.08);
+    --shadow-glow: 0 0 0 1px hsl(176 78% 30% / 0.1), 0 12px 32px -8px hsl(173 80% 34% / 0.3);
   }
 
   .dark {
-    --background: 224 47% 6%;
-    --foreground: 210 20% 98%;
-    --card: 224 44% 8%;
-    --card-foreground: 210 20% 98%;
-    --popover: 224 44% 8%;
-    --popover-foreground: 210 20% 98%;
-    --primary: 262 83% 66%;
-    --primary-foreground: 210 20% 98%;
-    --secondary: 215 27.9% 16.9%;
-    --secondary-foreground: 210 20% 98%;
-    --muted: 215 27.9% 16.9%;
-    --muted-foreground: 217.9 10.6% 64.9%;
-    --accent: 216 34% 17%;
-    --accent-foreground: 210 20% 98%;
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 210 20% 98%;
-    --border: 215 27.9% 16.9%;
-    --input: 215 27.9% 16.9%;
-    --ring: 262 83% 66%;
+    --background: 205 34% 7%;
+    --surface: 205 28% 10%;
+    --foreground: 200 22% 95%;
+    --card: 205 28% 10%;
+    --card-foreground: 200 22% 95%;
+    --popover: 205 28% 11%;
+    --popover-foreground: 200 22% 95%;
+
+    --primary: 172 70% 46%;
+    --primary-foreground: 205 40% 7%;
+
+    --electric: 171 74% 52%;
+    --cyan: 167 80% 55%;
+
+    --secondary: 205 22% 16%;
+    --secondary-foreground: 200 22% 92%;
+    --muted: 205 22% 16%;
+    --muted-foreground: 205 12% 60%;
+    --accent: 176 45% 18%;
+    --accent-foreground: 168 74% 78%;
+
+    --success: 152 56% 46%;
+    --warning: 40 94% 58%;
+    --destructive: 353 82% 62%;
+    --destructive-foreground: 205 40% 7%;
+
+    --border: 205 20% 18%;
+    --input: 205 20% 20%;
+    --ring: 172 70% 46%;
+
+    --shadow-sm: 0 1px 2px 0 hsl(205 60% 2% / 0.4);
+    --shadow-md: 0 4px 18px -4px hsl(205 60% 2% / 0.5), 0 2px 6px -2px hsl(205 60% 2% / 0.4);
+    --shadow-lg: 0 20px 52px -12px hsl(205 70% 1% / 0.7), 0 8px 20px -10px hsl(205 60% 2% / 0.5);
+    --shadow-glow: 0 0 0 1px hsl(172 70% 46% / 0.18), 0 14px 40px -10px hsl(172 74% 44% / 0.42);
   }
 }
 
@@ -56,61 +98,138 @@
 
   html {
     @apply antialiased;
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  }
+
+  /* Inter var: opt into the variable font + optical features when available. */
+  @supports (font-variation-settings: normal) {
+    html {
+      font-family: "Inter var", "Inter", ui-sans-serif, system-ui, sans-serif;
+    }
   }
 
   body {
     @apply bg-background text-foreground font-sans;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings: "cv11" 1, "ss01" 1, "calt" 1;
+    letter-spacing: -0.011em;
+  }
+
+  h1, h2, h3, h4 {
+    letter-spacing: -0.022em;
   }
 
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
   }
-
   ::-webkit-scrollbar-track {
     background: transparent;
   }
-
   ::-webkit-scrollbar-thumb {
-    @apply rounded-full bg-muted-foreground/25;
+    @apply rounded-full bg-muted-foreground/20;
+    border: 3px solid transparent;
+    background-clip: content-box;
   }
-
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-muted-foreground/40;
+    background-clip: content-box;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 }
 
 @layer components {
-  /* Brand gradient — headings / buttons / accents */
+  /* Brand gradient — reserve for accents, the logo, and AI/data moments. */
   .gradient-primary {
-    @apply bg-gradient-to-r from-violet-600 to-blue-600;
-  }
-
-  .gradient-text {
-    @apply bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent;
-  }
-
-  .dark .gradient-text {
-    @apply from-violet-400 to-blue-400;
-  }
-
-  /* Glassmorphism card */
-  .glass-card {
-    @apply bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl shadow-lg;
-  }
-
-  /* Animated gradient backdrop for auth screens */
-  .auth-gradient {
-    background: linear-gradient(
-      130deg,
-      #4c1d95 0%,
-      #6d28d9 25%,
-      #2563eb 50%,
-      #7c3aed 75%,
-      #4c1d95 100%
+    background-image: linear-gradient(
+      120deg,
+      hsl(var(--primary)) 0%,
+      hsl(var(--electric)) 55%,
+      hsl(var(--cyan)) 110%
     );
+  }
+  .gradient-text {
+    background-image: linear-gradient(
+      110deg,
+      hsl(var(--primary)) 0%,
+      hsl(var(--electric)) 60%,
+      hsl(var(--cyan)) 120%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Surface card — the workhorse container. Quiet, layered, hairline ring. */
+  .surface-card {
+    @apply rounded-3xl border border-border/70 bg-card shadow-[var(--shadow-md)];
+  }
+
+  /* Glass — for floating chrome (topbar, menus, hero overlays). */
+  .glass-card {
+    @apply rounded-3xl border border-white/40 bg-white/70 shadow-[var(--shadow-lg)] backdrop-blur-xl;
+  }
+  .dark .glass-card {
+    @apply border-white/10 bg-[hsl(232_33%_11%_/_0.7)];
+  }
+
+  /* Gradient-border card — the premium "AI" container. The padding cell
+     paints the border; the inner element restores the surface. */
+  .gradient-border {
+    position: relative;
+    border-radius: 1.5rem;
+    background:
+      linear-gradient(hsl(var(--card)), hsl(var(--card))) padding-box,
+      linear-gradient(130deg, hsl(var(--primary) / 0.55), hsl(var(--cyan) / 0.4) 60%, transparent) border-box;
+    border: 1px solid transparent;
+  }
+
+  /* Subtle top-lit sheen for hero panels. */
+  .hero-sheen {
+    background:
+      radial-gradient(120% 120% at 15% -20%, hsl(var(--electric) / 0.18), transparent 55%),
+      radial-gradient(90% 90% at 100% 0%, hsl(var(--primary) / 0.16), transparent 50%),
+      linear-gradient(180deg, hsl(var(--primary) / 0.04), transparent 40%);
+  }
+
+  /* Dotted grid backdrop for empty/atmosphere areas. */
+  .grid-backdrop {
+    background-image: radial-gradient(hsl(var(--muted-foreground) / 0.18) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+
+  .auth-gradient {
+    background: linear-gradient(130deg, #0c2b2b 0%, #0f5f52 24%, #0d9488 50%, #14b8a6 72%, #0f766e 100%);
     background-size: 300% 300%;
-    animation: gradient-pan 14s ease infinite;
+    animation: gradient-pan 16s ease infinite;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  /* Shimmer sweep used by skeleton loaders. */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted-foreground) / 0.12) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
   }
 }

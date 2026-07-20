@@ -51,11 +51,13 @@ export function ChartTooltip({
       : null;
 
   return (
-    <div className="z-50 rounded-lg border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md">
+    <div className="glass-card z-50 min-w-[8rem] rounded-2xl px-3.5 py-2.5 text-xs shadow-lg">
       {title !== null && (
-        <p className="mb-1.5 font-medium text-foreground">{title}</p>
+        <p className="mb-2 font-semibold tracking-tight text-foreground">
+          {title}
+        </p>
       )}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1.5">
         {payload.map((item, index) => {
           const rawValue = Array.isArray(item.value)
             ? item.value.join(" – ")

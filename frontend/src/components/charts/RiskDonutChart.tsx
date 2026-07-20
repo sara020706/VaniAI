@@ -50,6 +50,9 @@ export function RiskDonutChart({ data, height = 280 }: RiskDonutChartProps) {
               strokeWidth={2}
               startAngle={90}
               endAngle={-270}
+              isAnimationActive
+              animationDuration={700}
+              animationEasing="ease-out"
             >
               {plotted.map((slice) => (
                 <Cell key={slice.level} fill={colors.risk(slice.level)} />

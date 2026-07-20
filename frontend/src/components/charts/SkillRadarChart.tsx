@@ -52,6 +52,23 @@ export function SkillRadarChart({ data, series, height = 280 }: SkillRadarChartP
     <div className="w-full">
       <ResponsiveContainer width="100%" height={height}>
         <RadarChart data={data} outerRadius="72%">
+          <defs>
+            {resolvedSeries.map((entry, index) => {
+              const color = colors.categorical[index % colors.categorical.length];
+              return (
+                <radialGradient
+                  key={entry.key}
+                  id={`radar-fill-${entry.key}`}
+                  cx="50%"
+                  cy="50%"
+                  r="65%"
+                >
+                  <stop offset="0%" stopColor={color} stopOpacity={0.05} />
+                  <stop offset="100%" stopColor={color} stopOpacity={0.25} />
+                </radialGradient>
+              );
+            })}
+          </defs>
           <PolarGrid stroke={colors.grid} strokeWidth={1} />
           <PolarAngleAxis
             dataKey="skill"
@@ -74,8 +91,11 @@ export function SkillRadarChart({ data, series, height = 280 }: SkillRadarChartP
                 name={entry.name}
                 stroke={color}
                 strokeWidth={2}
-                fill={color}
-                fillOpacity={0.1}
+                fill={`url(#radar-fill-${entry.key})`}
+                fillOpacity={1}
+                isAnimationActive
+                animationDuration={600}
+                animationEasing="ease-out"
               />
             );
           })}

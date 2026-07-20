@@ -16,7 +16,6 @@ import { Link } from "react-router-dom";
 
 import {
   ErrorState,
-  GlassCard,
   LoadingState,
   PageHeader,
   StatCard,
@@ -45,8 +44,8 @@ const listContainer = {
   show: { transition: { staggerChildren: 0.05 } },
 };
 const listItem = {
-  hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.24, ease: "easeOut" as const } },
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" as const } },
 };
 
 /** Metric keys surfaced as headline StatCards for the active model. */
@@ -62,6 +61,60 @@ function uptimeLabel(seconds: number): string {
   return `${minutes}m`;
 }
 
+/** Small uppercase section eyebrow that aids scanning. */
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+      {children}
+    </p>
+  );
+}
+
+/** A single system-health tile in the infra status strip. */
+function HealthTile({
+  label,
+  ok,
+  value,
+  icon: Icon,
+  footer,
+}: {
+  label: string;
+  ok: boolean;
+  value: React.ReactNode;
+  icon: typeof ServerCog;
+  footer: React.ReactNode;
+}) {
+  return (
+    <motion.div
+      variants={listItem}
+      whileHover={{ y: -2 }}
+      transition={{ type: "spring", stiffness: 380, damping: 28 }}
+      className="surface-card p-5 transition-shadow hover:shadow-[var(--shadow-lg)]"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <Eyebrow>{label}</Eyebrow>
+          <p className="mt-2 flex items-center gap-2 text-lg font-semibold leading-tight">
+            <StatusDot ok={ok} />
+            <span className="truncate">{value}</span>
+          </p>
+        </div>
+        <div
+          className={cn(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border transition-colors",
+            ok
+              ? "border-primary/15 bg-primary/10 text-primary"
+              : "border-warning/25 bg-warning/10 text-warning",
+          )}
+        >
+          <Icon className="h-5 w-5" aria-hidden="true" />
+        </div>
+      </div>
+      <div className="mt-3 text-xs text-muted-foreground">{footer}</div>
+    </motion.div>
+  );
+}
+
 export default function AdminDashboardPage() {
   const health = useMonitoringHealth();
   const models = useModels();
@@ -75,7 +128,7 @@ export default function AdminDashboardPage() {
   const predictionDrift = drift.data?.prediction_drift ?? null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title="Admin Dashboard"
         description="System health, the active placement model, and MLOps activity at a glance."
@@ -98,157 +151,120 @@ export default function AdminDashboardPage() {
       />
 
       {/* System health ---------------------------------------------------- */}
-      {health.isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-28 rounded-2xl" />
-          ))}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2.5 w-2.5">
+            {health.data?.status === "ok" && (
+              <span className="absolute inline-flex h-full w-full animate-pulse-ring rounded-full bg-success/60" />
+            )}
+            <StatusDot ok={health.data?.status === "ok"} />
+          </span>
+          <Eyebrow>System health</Eyebrow>
         </div>
-      ) : health.isError ? (
-        <ErrorState
-          title="Could not load system health"
-          onRetry={() => void health.refetch()}
-        />
-      ) : health.data ? (
-        <motion.div
-          variants={listContainer}
-          initial="hidden"
-          animate="show"
-          className="space-y-4"
-        >
-          {health.data.is_fallback && (
-            <motion.div variants={listItem}>
-              <div
-                className="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200"
+
+        {health.isLoading ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={index} className="h-28 rounded-3xl" />
+            ))}
+          </div>
+        ) : health.isError ? (
+          <ErrorState
+            title="Could not load system health"
+            onRetry={() => void health.refetch()}
+          />
+        ) : health.data ? (
+          <motion.div
+            variants={listContainer}
+            initial="hidden"
+            animate="show"
+            className="space-y-4"
+          >
+            {health.data.is_fallback && (
+              <motion.div
+                variants={listItem}
+                className="flex items-start gap-3 rounded-3xl border border-warning/30 bg-warning/10 px-4 py-3.5 text-warning-foreground"
                 role="alert"
               >
-                <AlertTriangle
-                  className="mt-0.5 h-5 w-5 shrink-0"
-                  aria-hidden="true"
-                />
-                <div className="text-sm">
-                  <p className="font-semibold">Heuristic fallback active</p>
-                  <p className="mt-0.5">
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-warning/15 text-warning">
+                  <AlertTriangle className="h-4.5 w-4.5" aria-hidden="true" />
+                </div>
+                <div className="min-w-0 text-sm">
+                  <p className="font-semibold text-foreground">
+                    Heuristic fallback active
+                  </p>
+                  <p className="mt-0.5 text-muted-foreground">
                     No trained model is deployed — predictions are served by the
-                    deterministic heuristic (<code>{health.data.model_version}</code>).
-                    Upload a dataset and run training to activate a real model.
+                    deterministic heuristic (
+                    <code className="rounded bg-warning/15 px-1 py-0.5 font-mono text-xs text-warning">
+                      {health.data.model_version}
+                    </code>
+                    ). Upload a dataset and run training to activate a real model.
                   </p>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   asChild
-                  className="ml-auto shrink-0 border-amber-400 dark:border-amber-700"
+                  className="ml-auto shrink-0 border-warning/40 text-warning hover:bg-warning/10"
                 >
                   <Link to="/admin/datasets">Go to datasets</Link>
                 </Button>
-              </div>
-            </motion.div>
-          )}
+              </motion.div>
+            )}
 
-          <motion.div
-            variants={listItem}
-            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
-          >
-            <GlassCard className="p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    API Status
-                  </p>
-                  <p className="mt-1.5 flex items-center gap-2 text-lg font-semibold">
-                    <StatusDot ok={health.data.status === "ok"} />
-                    {health.data.status === "ok" ? "Operational" : "Degraded"}
-                  </p>
-                </div>
-                <div className="gradient-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-md">
-                  <ServerCog className="h-5 w-5" aria-hidden="true" />
-                </div>
-              </div>
-              <p className="mt-3 text-xs text-muted-foreground">
-                Uptime {uptimeLabel(health.data.uptime_seconds)}
-              </p>
-            </GlassCard>
-
-            <GlassCard className="p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Database
-                  </p>
-                  <p className="mt-1.5 flex items-center gap-2 text-lg font-semibold">
-                    <StatusDot ok={health.data.database} />
-                    {health.data.database ? "Connected" : "Unreachable"}
-                  </p>
-                </div>
-                <div className="gradient-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-md">
-                  <Database className="h-5 w-5" aria-hidden="true" />
-                </div>
-              </div>
-              <p className="mt-3 text-xs text-muted-foreground">
-                PostgreSQL connection health
-              </p>
-            </GlassCard>
-
-            <GlassCard className="p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Active Model
-                  </p>
-                  <p className="mt-1.5 flex items-center gap-2 text-lg font-semibold">
-                    <StatusDot ok={health.data.model_loaded} />
-                    <span className="truncate">{health.data.model_version}</span>
-                  </p>
-                </div>
-                <div className="gradient-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-md">
-                  <Cpu className="h-5 w-5" aria-hidden="true" />
-                </div>
-              </div>
-              <p className="mt-3 text-xs">
-                {health.data.is_fallback ? (
-                  <Badge variant="warning">Fallback</Badge>
-                ) : (
-                  <Badge variant="success">Trained model</Badge>
-                )}
-              </p>
-            </GlassCard>
-
-            <GlassCard className="p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    MLflow
-                  </p>
-                  <p className="mt-1.5 flex items-center gap-2 text-lg font-semibold">
-                    <StatusDot ok={health.data.mlflow_configured} />
-                    {health.data.mlflow_configured
-                      ? "Configured"
-                      : "Not configured"}
-                  </p>
-                </div>
-                <div className="gradient-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-md">
-                  <FlaskConical className="h-5 w-5" aria-hidden="true" />
-                </div>
-              </div>
-              <p className="mt-3 text-xs text-muted-foreground">
-                Experiment tracking backend
-              </p>
-            </GlassCard>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <HealthTile
+                label="API Status"
+                ok={health.data.status === "ok"}
+                value={health.data.status === "ok" ? "Operational" : "Degraded"}
+                icon={ServerCog}
+                footer={`Uptime ${uptimeLabel(health.data.uptime_seconds)}`}
+              />
+              <HealthTile
+                label="Database"
+                ok={health.data.database}
+                value={health.data.database ? "Connected" : "Unreachable"}
+                icon={Database}
+                footer="PostgreSQL connection health"
+              />
+              <HealthTile
+                label="Active Model"
+                ok={health.data.model_loaded}
+                value={health.data.model_version}
+                icon={Cpu}
+                footer={
+                  health.data.is_fallback ? (
+                    <Badge variant="warning">Fallback</Badge>
+                  ) : (
+                    <Badge variant="success">Trained model</Badge>
+                  )
+                }
+              />
+              <HealthTile
+                label="MLflow"
+                ok={health.data.mlflow_configured}
+                value={
+                  health.data.mlflow_configured ? "Configured" : "Not configured"
+                }
+                icon={FlaskConical}
+                footer="Experiment tracking backend"
+              />
+            </div>
           </motion.div>
-        </motion.div>
-      ) : null}
+        ) : null}
+      </section>
 
       {/* Active model metrics -------------------------------------------- */}
-      <section className="space-y-3">
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <Target className="h-5 w-5 text-primary" aria-hidden="true" />
-          Active Model Metrics
-        </h2>
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Target className="h-4 w-4 text-primary" aria-hidden="true" />
+          <Eyebrow>Active model metrics</Eyebrow>
+        </div>
         {models.isLoading ? (
           <div className="grid gap-4 sm:grid-cols-3">
             {Array.from({ length: 3 }).map((_, index) => (
-              <Skeleton key={index} className="h-28 rounded-2xl" />
+              <Skeleton key={index} className="h-32 rounded-3xl" />
             ))}
           </div>
         ) : models.isError ? (
@@ -257,41 +273,46 @@ export default function AdminDashboardPage() {
             onRetry={() => void models.refetch()}
           />
         ) : activeModel ? (
-          <div className="grid gap-4 sm:grid-cols-3">
+          <motion.div
+            variants={listContainer}
+            initial="hidden"
+            animate="show"
+            className="grid gap-4 sm:grid-cols-3"
+          >
             {HEADLINE_METRICS.map((key) => (
-              <StatCard
-                key={key}
-                title={metricLabel(key)}
-                value={formatMetric(activeModel.metrics[key])}
-                icon={
-                  key === "accuracy"
-                    ? Target
-                    : key === "f1"
-                      ? Activity
-                      : LineChart
-                }
-                description={`${activeModel.version} · ${activeModel.model_type}`}
-                gradient
-              />
+              <motion.div key={key} variants={listItem}>
+                <StatCard
+                  title={metricLabel(key)}
+                  value={formatMetric(activeModel.metrics[key])}
+                  icon={
+                    key === "accuracy"
+                      ? Target
+                      : key === "f1"
+                        ? Activity
+                        : LineChart
+                  }
+                  description={`${activeModel.version} · ${activeModel.model_type}`}
+                  gradient
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         ) : (
-          <GlassCard className="p-5">
+          <div className="surface-card p-5">
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <ShieldCheck
-                className="h-5 w-5 shrink-0 text-amber-500"
-                aria-hidden="true"
-              />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-warning/25 bg-warning/10 text-warning">
+                <ShieldCheck className="h-5 w-5" aria-hidden="true" />
+              </div>
               No trained model has been registered yet. Metrics will appear once
               training completes.
             </div>
-          </GlassCard>
+          </div>
         )}
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent training history --------------------------------------- */}
-        <GlassCard className="p-5">
+        <div className="surface-card p-5">
           <div className="mb-4 flex items-center justify-between gap-2">
             <h2 className="flex items-center gap-2 text-base font-semibold">
               <FlaskConical className="h-5 w-5 text-primary" aria-hidden="true" />
@@ -306,7 +327,7 @@ export default function AdminDashboardPage() {
           ) : training.isError ? (
             <ErrorState onRetry={() => void training.refetch()} />
           ) : recentExperiments.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
+            <p className="py-8 text-center text-sm text-muted-foreground">
               No training runs yet.
             </p>
           ) : (
@@ -320,7 +341,7 @@ export default function AdminDashboardPage() {
                 <motion.li
                   key={experiment.id}
                   variants={listItem}
-                  className="flex items-center justify-between gap-3 rounded-xl border bg-card/40 px-3 py-2.5"
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-muted/30 px-3.5 py-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">
@@ -343,10 +364,10 @@ export default function AdminDashboardPage() {
               ))}
             </motion.ul>
           )}
-        </GlassCard>
+        </div>
 
         {/* Drift summary -------------------------------------------------- */}
-        <GlassCard className="p-5">
+        <div className="surface-card p-5">
           <div className="mb-4 flex items-center justify-between gap-2">
             <h2 className="flex items-center gap-2 text-base font-semibold">
               <Gauge className="h-5 w-5 text-primary" aria-hidden="true" />
@@ -362,7 +383,7 @@ export default function AdminDashboardPage() {
             <ErrorState onRetry={() => void drift.refetch()} />
           ) : (
             <div className="space-y-3">
-              <div className="flex items-center justify-between gap-3 rounded-xl border bg-card/40 px-3 py-3">
+              <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-muted/30 px-3.5 py-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium">Data drift</p>
                   <p className="text-xs text-muted-foreground">
@@ -386,7 +407,7 @@ export default function AdminDashboardPage() {
                 )}
               </div>
 
-              <div className="flex items-center justify-between gap-3 rounded-xl border bg-card/40 px-3 py-3">
+              <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-muted/30 px-3.5 py-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium">Prediction drift</p>
                   <p className="text-xs text-muted-foreground">
@@ -413,14 +434,16 @@ export default function AdminDashboardPage() {
               {dataDrift && (
                 <div
                   className={cn(
-                    "rounded-xl border px-3 py-2 text-xs",
+                    "rounded-2xl border px-3.5 py-2.5 text-xs",
                     dataDrift.data_drift_detected
-                      ? "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
-                      : "border-border bg-card/40 text-muted-foreground",
+                      ? "border-warning/30 bg-warning/10 text-warning-foreground"
+                      : "border-border/60 bg-muted/30 text-muted-foreground",
                   )}
                 >
-                  {(dataDrift.share_drifted * 100).toFixed(1)}% of features
-                  drifted
+                  <span className="font-semibold tabular-nums">
+                    {(dataDrift.share_drifted * 100).toFixed(1)}%
+                  </span>{" "}
+                  of features drifted
                   {dataDrift.drifted_features.length > 0 &&
                     ` · ${dataDrift.drifted_features.slice(0, 3).join(", ")}${
                       dataDrift.drifted_features.length > 3 ? "…" : ""
@@ -429,7 +452,7 @@ export default function AdminDashboardPage() {
               )}
             </div>
           )}
-        </GlassCard>
+        </div>
       </div>
     </div>
   );

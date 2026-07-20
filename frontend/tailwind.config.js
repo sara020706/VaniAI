@@ -18,7 +18,12 @@ export default {
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
+        surface: "hsl(var(--surface))",
         foreground: "hsl(var(--foreground))",
+        electric: "hsl(var(--electric))",
+        cyan: "hsl(var(--cyan))",
+        success: "hsl(var(--success))",
+        warning: "hsl(var(--warning))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -48,10 +53,18 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
       },
+      boxShadow: {
+        sm: "var(--shadow-sm)",
+        md: "var(--shadow-md)",
+        lg: "var(--shadow-lg)",
+        glow: "var(--shadow-glow)",
+      },
       borderRadius: {
+        "4xl": "2rem",
+        "3xl": "1.5rem",
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        md: "calc(var(--radius) - 4px)",
+        sm: "calc(var(--radius) - 8px)",
       },
       fontFamily: {
         sans: [
@@ -80,11 +93,21 @@ export default {
           "33%": { transform: "translate(40px, -50px) scale(1.1)" },
           "66%": { transform: "translate(-30px, 30px) scale(0.95)" },
         },
+        shimmer: {
+          "0%": { "background-position": "200% 0" },
+          "100%": { "background-position": "-200% 0" },
+        },
+        "pulse-ring": {
+          "0%": { transform: "scale(0.9)", opacity: "0.7" },
+          "70%, 100%": { transform: "scale(1.6)", opacity: "0" },
+        },
       },
       animation: {
         "fade-in": "fade-in 0.3s ease-out",
         "gradient-pan": "gradient-pan 12s ease infinite",
         "float-blob": "float-blob 16s ease-in-out infinite",
+        shimmer: "shimmer 1.6s ease-in-out infinite",
+        "pulse-ring": "pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
       },
     },
   },

@@ -1,7 +1,7 @@
 import { TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
+import { motion } from "framer-motion";
 import * as React from "react";
 
-import { GlassCard } from "@/components/shared/GlassCard";
 import { cn } from "@/lib/utils";
 
 export interface StatCardProps {
@@ -16,8 +16,8 @@ export interface StatCardProps {
 }
 
 /**
- * Headline KPI tile — glass card with a big proportional-figure value,
- * an icon chip, and an optional delta indicator.
+ * Premium metric tile — eyebrow label, a big proportional-figure value, a
+ * soft-teal icon chip, and an optional delta. Elevates gently on hover.
  */
 export function StatCard({
   title,
@@ -29,34 +29,41 @@ export function StatCard({
   className,
 }: StatCardProps) {
   return (
-    <GlassCard className={cn("p-5", className)}>
+    <motion.div
+      whileHover={{ y: -2 }}
+      transition={{ type: "spring", stiffness: 380, damping: 28 }}
+      className={cn(
+        "surface-card group relative overflow-hidden p-5 transition-shadow hover:shadow-[var(--shadow-lg)]",
+        className,
+      )}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-muted-foreground">
+          <p className="truncate text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {title}
           </p>
           <div
             className={cn(
-              "mt-1.5 text-3xl font-bold tracking-tight",
+              "mt-2 text-3xl font-bold leading-none tracking-tight",
               gradient && "gradient-text",
             )}
           >
             {value}
           </div>
         </div>
-        <div className="gradient-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-md">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
           <Icon className="h-5 w-5" aria-hidden="true" />
         </div>
       </div>
       {(trend || description) && (
-        <div className="mt-3 flex items-center gap-2 text-xs">
+        <div className="mt-4 flex items-center gap-2 text-xs">
           {trend && (
             <span
               className={cn(
-                "inline-flex items-center gap-1 font-medium",
+                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold",
                 trend.positive
-                  ? "text-green-600 dark:text-green-400"
-                  : "text-red-600 dark:text-red-400",
+                  ? "bg-success/10 text-success"
+                  : "bg-destructive/10 text-destructive",
               )}
             >
               {trend.positive ? (
@@ -73,6 +80,6 @@ export function StatCard({
           )}
         </div>
       )}
-    </GlassCard>
+    </motion.div>
   );
 }

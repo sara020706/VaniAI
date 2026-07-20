@@ -121,7 +121,7 @@ export default function FacultyDashboardPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title="Faculty Dashboard"
         description="Cohort readiness at a glance — filter by department and batch."
@@ -173,7 +173,7 @@ export default function FacultyDashboardPage() {
         <ErrorState onRetry={() => void query.refetch()} />
       ) : query.data ? (
         <motion.div
-          className="space-y-6"
+          className="space-y-8"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
@@ -217,37 +217,58 @@ export default function FacultyDashboardPage() {
             </motion.div>
           </motion.div>
 
-          <motion.div
-            className="grid gap-6 lg:grid-cols-2"
+          <motion.section
+            className="space-y-4"
             variants={containerVariants}
           >
-            <motion.div variants={itemVariants}>
-              <GlassCard className="p-5">
-                <h2 className="mb-1 text-sm font-semibold">Skill Averages</h2>
-                <p className="mb-2 text-xs text-muted-foreground">
-                  Cohort mean across the five tracked skills (0–100).
-                </p>
-                <SkillRadarChart data={radarData} />
-              </GlassCard>
-            </motion.div>
-            <motion.div variants={itemVariants}>
-              <GlassCard className="p-5">
-                <h2 className="mb-1 text-sm font-semibold">Risk Distribution</h2>
-                <p className="mb-2 text-xs text-muted-foreground">
-                  How many students sit in each risk band.
-                </p>
-                <RiskDonutChart data={query.data.risk_distribution} />
-              </GlassCard>
-            </motion.div>
-          </motion.div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Cohort analytics
+              </p>
+              <h2 className="text-lg font-bold tracking-tight">
+                Skill &amp; risk profile
+              </h2>
+            </div>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <motion.div variants={itemVariants} whileHover={{ y: -2 }}>
+                <GlassCard className="h-full p-6 transition-shadow hover:shadow-[var(--shadow-lg)]">
+                  <h3 className="text-sm font-semibold">Skill Averages</h3>
+                  <p className="mb-3 text-xs text-muted-foreground">
+                    Cohort mean across the five tracked skills (0–100).
+                  </p>
+                  <SkillRadarChart data={radarData} />
+                </GlassCard>
+              </motion.div>
+              <motion.div variants={itemVariants} whileHover={{ y: -2 }}>
+                <GlassCard className="h-full p-6 transition-shadow hover:shadow-[var(--shadow-lg)]">
+                  <h3 className="text-sm font-semibold">Risk Distribution</h3>
+                  <p className="mb-3 text-xs text-muted-foreground">
+                    How many students sit in each risk band.
+                  </p>
+                  <RiskDonutChart data={query.data.risk_distribution} />
+                </GlassCard>
+              </motion.div>
+            </div>
+          </motion.section>
 
-          <motion.div
-            className="grid gap-6 lg:grid-cols-2"
+          <motion.section
+            className="space-y-4"
             variants={containerVariants}
           >
-            <motion.div variants={itemVariants}>
-              <GlassCard className="p-5">
-                <h2 className="mb-3 text-sm font-semibold">Top Performers</h2>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Students in focus
+              </p>
+              <h2 className="text-lg font-bold tracking-tight">
+                Who to celebrate, who to support
+              </h2>
+            </div>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <motion.div variants={itemVariants} className="space-y-3">
+                <h3 className="flex items-center gap-2 text-sm font-semibold">
+                  <TrendingUp className="h-4 w-4 text-success" aria-hidden="true" />
+                  Top Performers
+                </h3>
                 <DataTable
                   columns={columns}
                   data={query.data.top_performers}
@@ -255,13 +276,15 @@ export default function FacultyDashboardPage() {
                   onRowClick={(row) => navigate(`/faculty/students/${row.id}`)}
                   emptyMessage="No performers to show yet"
                 />
-              </GlassCard>
-            </motion.div>
-            <motion.div variants={itemVariants}>
-              <GlassCard className="p-5">
-                <h2 className="mb-3 text-sm font-semibold">
+              </motion.div>
+              <motion.div variants={itemVariants} className="space-y-3">
+                <h3 className="flex items-center gap-2 text-sm font-semibold">
+                  <AlertTriangle
+                    className="h-4 w-4 text-warning"
+                    aria-hidden="true"
+                  />
                   Students Needing Support
-                </h2>
+                </h3>
                 <DataTable
                   columns={columns}
                   data={query.data.weak_students}
@@ -269,9 +292,9 @@ export default function FacultyDashboardPage() {
                   onRowClick={(row) => navigate(`/faculty/students/${row.id}`)}
                   emptyMessage="No at-risk students in this selection"
                 />
-              </GlassCard>
-            </motion.div>
-          </motion.div>
+              </motion.div>
+            </div>
+          </motion.section>
         </motion.div>
       ) : null}
     </div>
